@@ -1,0 +1,20 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/sync-activity",
+      "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/cron/update-qualifying",
+      "schedule": "0 */6 * * 1-5"
+    },
+    {
+      "path": "/api/cron/simulate-race",
+      "schedule": "0 14 * * 0"
+    },
+    {
+      "path": "/api/cron/update-divisions",
+      "schedule": "0 18 * * 0"
+    }
+  ]
+}

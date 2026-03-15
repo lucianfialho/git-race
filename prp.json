@@ -1,0 +1,988 @@
+{
+  "name": "GitRace Manager",
+  "vision": "F1 Manager game where GitHub contributions become car performance. Follows real F1 calendar with qualifying during the week and races on weekends. Grids of 20 drivers with divisions (F3→F2→F1), sprint races, rivalries, achievements. Mobile-first UI, no 3D.",
+  "features": [
+    {
+      "name": "F0: Cleanup — Remove 3D & Restructure",
+      "tasks": [
+        {
+          "id": "0.1",
+          "title": "Remove Three.js dependencies and 3D components",
+          "description": "Remove three, @react-three/fiber, @react-three/drei, @types/three from package.json. Delete src/components/race/race-canvas.tsx, src/hooks/use-camera.ts, public/models/f1-car.glb, and src/lib/race/track-geometry.ts + its test. Run npm install after.",
+          "priority": 1,
+          "passes": false,
+          "tests": { "command": "npm run build" },
+          "acceptance": [
+            "No three.js related packages in package.json",
+            "No 3D component files exist",
+            "Build passes without errors",
+            "Typecheck passes"
+          ],
+          "context": {
+            "files": ["package.json", "src/components/race/race-canvas.tsx", "src/hooks/use-camera.ts", "public/models/f1-car.glb"],
+            "hints": ["Also remove any imports of deleted files in other components"]
+          }
+        },
+        {
+          "id": "0.2",
+          "title": "Clean up old race page and references to 3D",
+          "description": "Update src/app/race/page.tsx to remove RaceCanvas import — replace with a placeholder 'Coming soon' page. Remove old race/[raceId] page. Clean up src/components/race/hud.tsx if it depends on 3D state. Update any imports in layout.tsx or other pages that reference removed components.",
+          "priority": 2,
+          "passes": false,
+          "tests": { "command": "npm run build" },
+          "acceptance": [
+            "Race page renders without errors",
+            "No broken imports anywhere",
+            "Build passes"
+          ],
+          "context": {
+            "files": ["src/app/race/page.tsx", "src/app/race/[raceId]/page.tsx", "src/components/race/hud.tsx"],
+            "hints": ["Keep the route structure, just replace content"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "F1: Database Schema — Grand Prix, Divisions, Bots",
+      "tasks": [
+        {
+          "id": "1.1",
+          "title": "Create migration: grand_prix table with F1 2025 calendar",
+          "description": "Create supabase/migrations/002_grand_prix.sql. Table grand_prix: id uuid PK, season_id FK, slug text unique, name text, country text, country_code text (ISO 3166), circuit_name text, round_number int, theme_colors jsonb (primary, secondary, accent), has_sprint boolean, quali_start timestamptz, quali_end timestamptz, sprint_date timestamptz nullable, race_date timestamptz, status enum('upcoming','qualifying','sprint','race_day','finished'). Seed with full 2025 F1 calendar (24 GPs). Include RLS (public read, service_role write). Index on (season_id, status) and (race_date).",
+          "priority": 1,
+          "passes": false,
+          "tests": { "command": "npm run test" },
+          "acceptance": [
+            "Migration file is valid SQL",
+            "All 24 GPs of 2025 season seeded with correct dates",
+            "Sprint weekends correctly marked (has_sprint=true)",
+            "Theme colors defined for each GP",
+            "RLS policies applied"
+          ],
+          "context": {
+            "files": ["supabase/migrations/001_initial_schema.sql"],
+            "hints": [
+              "2025 calendar: Bahrain 3/14-16, Saudi 3/21-23, Australia 3/28-30, Japan 4/4-6, China (sprint) 4/18-20, Miami (sprint) 5/2-4, Emilia Romagna 5/16-18, Monaco 5/23-25, Spain 6/1, Canada 6/13-15, Austria (sprint) 6/27-29, UK 7/4-6, Belgium (sprint) 7/25-27, Netherlands 8/29-31, Italy 9/5-7, Azerbaijan 9/19-21, Singapore 10/3-5, USA (sprint) 10/17-19, Mexico 10/24-26, Brazil (sprint) 10/31-11/2, Las Vegas 11/20-22, Qatar (sprint) 11/28-30, Abu Dhabi 12/5-7",
+              "Theme colors: use flag-inspired colors per country"
+            ]
+          }
+        },
+        {
+          "id": "1.2",
+          "title": "Create migration: divisions and grids tables",
+          "description": "Create supabase/migrations/003_divisions_grids.sql. Table divisions: id uuid PK, name text ('F3','F2','F1'), level int (1=F3, 2=F2, 3=F1), season_id FK. Table grids: id uuid PK, gp_id FK references grand_prix, division_id FK, created_at. Table grid_entries: id uuid PK, grid_id FK, profile_id FK, is_bot boolean default false, bot_name text nullable, bot_stats jsonb nullable. Add division_id column to profiles table (nullable FK). RLS: public read, service_role write. Unique constraint on (grid_id, profile_id).",
+          "priority": 2,
+          "passes": false,
+          "tests": { "command": "npm run test" },
+          "acceptance": [
+            "Migration creates divisions, grids, grid_entries tables",
+            "profiles table gains division_id column",
+            "RLS policies applied",
+            "Indexes on grid_entries(grid_id) and grid_entries(profile_id)"
+          ],
+          "context": {
+            "files": ["supabase/migrations/001_initial_schema.sql"],
+            "hints": ["New users default to division F3 (level 1)"]
+          }
+        },
+        {
+          "id": "1.3",
+          "title": "Create migration: qualifying_results and race_results tables",
+          "description": "Create supabase/migrations/004_qualifying_race_results.sql. Table qualifying_results: id uuid PK, gp_id FK, grid_id FK, profile_id FK, q1_time float, q2_time float nullable, q3_time float nullable, final_position int, eliminated_in text nullable ('Q1','Q2'), created_at. Table race_results: id uuid PK, gp_id FK, grid_id FK, profile_id FK, grid_position int, final_position int, points_earned int default 0, fastest_lap boolean default false, dnf boolean default false, dnf_lap int nullable, dnf_reason text nullable, gap_to_leader float default 0, events_log jsonb default '[]', is_sprint boolean default false, created_at. Unique on (gp_id, profile_id, is_sprint). RLS: public read, service_role write.",
+          "priority": 3,
+          "passes": false,
+          "tests": { "command": "npm run test" },
+          "acceptance": [
+            "Both tables created with correct columns",
+            "Unique constraints prevent duplicate entries",
+            "RLS policies applied",
+            "Indexes on (gp_id, final_position) for both tables"
+          ],
+          "context": {
+            "files": ["supabase/migrations/001_initial_schema.sql"],
+            "hints": ["events_log stores array of {lap, type, description, involved_profiles}"]
+          }
+        },
+        {
+          "id": "1.4",
+          "title": "Create migration: achievements system",
+          "description": "Create supabase/migrations/005_achievements.sql. Table achievements: id uuid PK, slug text unique, name text, description text, icon text (emoji), criteria jsonb, category text ('race','qualifying','season','contribution'). Table profile_achievements: id uuid PK, profile_id FK, achievement_id FK, unlocked_at timestamptz default now(), gp_id FK nullable. Unique on (profile_id, achievement_id). Seed initial achievements: pole_position, race_winner, podium, comeback_king, consistency_is_key, rain_master, senna (3 consecutive poles), the_professor (50+ reviews), rookie_of_the_year, first_points, first_win, hat_trick (pole+win+fastest_lap), grand_chelem (pole+win+fastest_lap+led_every_lap). RLS: public read, service_role write for achievements; public read + own insert for profile_achievements.",
+          "priority": 4,
+          "passes": false,
+          "tests": { "command": "npm run test" },
+          "acceptance": [
+            "Both tables created",
+            "13+ achievements seeded",
+            "RLS policies correct",
+            "Criteria stored as queryable JSON"
+          ],
+          "context": {
+            "files": ["supabase/migrations/001_initial_schema.sql"],
+            "hints": ["criteria format: {type: 'race_position', value: 1} or {type: 'consecutive_poles', count: 3}"]
+          }
+        },
+        {
+          "id": "1.5",
+          "title": "Add car_stats JSONB column to profiles and update activity_snapshots",
+          "description": "Create supabase/migrations/006_car_components.sql. Add car_stats jsonb column to profiles (default: {power_unit:0, aero:0, reliability:0, tire_mgmt:0, strategy:0}). Add rival_id uuid FK nullable to profiles (self-referencing). Update activity_snapshots to include component breakdown columns: power_unit_score float, aero_score float, reliability_score float, tire_mgmt_score float, strategy_score float (all default 0). These replace the old generic speed/consistency/impact scores for the new 5-component model.",
+          "priority": 5,
+          "passes": false,
+          "tests": { "command": "npm run test" },
+          "acceptance": [
+            "profiles.car_stats column exists with default",
+            "profiles.rival_id column exists",
+            "activity_snapshots has 5 new component score columns",
+            "Old speed_score/consistency_score/impact_score columns preserved for backwards compat"
+          ],
+          "context": {
+            "files": ["supabase/migrations/001_initial_schema.sql"],
+            "hints": ["Keep old score columns — they'll be deprecated but not removed yet"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "F2: Car Component Scoring Engine",
+      "tasks": [
+        {
+          "id": "2.1",
+          "title": "Create car component calculation module",
+          "description": "Create src/lib/race/car-components.ts. Define CarStats interface {power_unit, aero, reliability, tire_mgmt, strategy} (all 0-100). Implement calculateCarComponents(metrics: ActivityMetrics, days: DayContribution[]): CarStats. Mapping: power_unit = log2(commits * 3 + 1) * 10 capped at 100. aero = log2((prs_opened * 5 + prs_merged * 8) + 1) * 10 capped at 100. reliability = (activeDays / totalDays) * 100. tire_mgmt = log2(prs_reviewed * 4 + 1) * 10 capped at 100. strategy = log2((issues_opened * 2 + issues_closed * 3) + 1) * 10 capped at 100. Export helper calculateOverallRating(stats: CarStats): number (weighted average).",
+          "priority": 1,
+          "passes": false,
+          "tests": { "command": "npm run test" },
+          "acceptance": [
+            "All 5 components calculated correctly from GitHub metrics",
+            "All scores capped at 0-100 range",
+            "Zero activity returns all zeros",
+            "Overall rating is weighted average",
+            "Typecheck passes"
+          ],
+          "context": {
+            "files": ["src/lib/race/metrics.ts"],
+            "hints": ["Reuse ActivityMetrics and DayContribution interfaces from metrics.ts"]
+          }
+        },
+        {
+          "id": "2.2",
+          "title": "Write unit tests for car component calculations",
+          "description": "Create src/lib/race/car-components.test.ts. Test: zero activity = all zeros. Test: only commits → only power_unit increases. Test: only PRs → only aero increases. Test: daily activity → reliability 100. Test: only reviews → only tire_mgmt increases. Test: only issues → only strategy increases. Test: all maxed out caps at 100 each. Test: overall rating calculation. Test: realistic developer profile (mixed contributions).",
+          "priority": 2,
+          "passes": false,
+          "tests": { "command": "npm run test" },
+          "acceptance": [
+            "All 9+ test cases pass",
+            "Edge cases covered (zero, max, mixed)",
+            "Tests run with vitest"
+          ],
+          "context": {
+            "files": ["src/lib/race/metrics.test.ts", "src/lib/race/car-components.ts"],
+            "hints": ["Follow same test style as metrics.test.ts"]
+          }
+        },
+        {
+          "id": "2.3",
+          "title": "Update GitHub sync to calculate car components",
+          "description": "Modify src/lib/github/sync.ts syncProfileActivity to also call calculateCarComponents and include the 5 component scores in the returned snapshot data. Update syncAllProfiles to also update profiles.car_stats with latest component values. Keep old speed/consistency/impact scores for now (backwards compat).",
+          "priority": 3,
+          "passes": false,
+          "tests": { "command": "npm run test" },
+          "acceptance": [
+            "syncProfileActivity returns 5 component scores",
+            "activity_snapshots upsert includes component scores",
+            "profiles.car_stats updated on each sync",
+            "Old scores still calculated and stored",
+            "Typecheck passes"
+          ],
+          "context": {
+            "files": ["src/lib/github/sync.ts", "src/lib/race/car-components.ts"],
+            "hints": ["Import calculateCarComponents from car-components.ts"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "F3: Grand Prix Lifecycle & Calendar Engine",
+      "tasks": [
+        {
+          "id": "3.1",
+          "title": "Create GP calendar data module",
+          "description": "Create src/lib/f1/calendar.ts. Export F1_2025_CALENDAR array with all 24 GPs containing: slug, name, country, countryCode, circuit, round, hasSprint, dates (qualiStart, qualiEnd, sprintDate, raceDate as ISO strings), themeColors {primary, secondary, accent, bg}. Export helpers: getCurrentGP(), getNextGP(), getGPBySlug(slug), getGPStatus(gp) returning 'upcoming'|'qualifying'|'sprint'|'race_day'|'finished', isQualifyingActive(gp), isRaceDay(gp). This is a static data file — no DB calls.",
+          "priority": 1,
+          "passes": false,
+          "tests": { "command": "npm run test" },
+          "acceptance": [
+            "All 24 GPs defined with correct dates",
+            "Sprint weekends flagged (China, Miami, Austria, Belgium, USA, Brazil, Qatar)",
+            "getCurrentGP returns correct GP based on today's date",
+            "getGPStatus returns correct lifecycle stage",
+            "Theme colors defined for each GP",
+            "Typecheck passes"
+          ],
+          "context": {
+            "files": [],
+            "hints": [
+              "Qualifying: Monday 00:00 UTC to Friday 23:59 UTC of GP week",
+              "Sprint: Saturday of sprint weekends",
+              "Race: Sunday, use approximate real GP times"
+            ]
+          }
+        },
+        {
+          "id": "3.2",
+          "title": "Write tests for GP calendar helpers",
+          "description": "Create src/lib/f1/calendar.test.ts. Test getCurrentGP with mocked dates. Test getGPStatus for each lifecycle stage. Test sprint weekend detection. Test getNextGP when between GPs. Test edge case: off-season (no active GP).",
+          "priority": 2,
+          "passes": false,
+          "tests": { "command": "npm run test" },
+          "acceptance": [
+            "All tests pass",
+            "Date mocking works correctly",
+            "All GP statuses tested"
+          ],
+          "context": {
+            "files": ["src/lib/f1/calendar.ts"],
+            "hints": ["Use vi.useFakeTimers() in vitest to mock dates"]
+          }
+        },
+        {
+          "id": "3.3",
+          "title": "Create GP theme provider component",
+          "description": "Create src/components/theme-provider.tsx. Server component that reads current GP from calendar, extracts theme colors, and applies them as CSS custom properties on a wrapper div (--gp-primary, --gp-secondary, --gp-accent, --gp-bg). Also passes GP metadata (name, country, countryCode, circuit) via React context. Create src/lib/f1/theme-context.ts with GPThemeContext and useGPTheme hook. Update src/app/layout.tsx to wrap children with ThemeProvider.",
+          "priority": 3,
+          "passes": false,
+          "tests": { "command": "npm run build" },
+          "acceptance": [
+            "ThemeProvider sets CSS custom properties based on current GP",
+            "useGPTheme hook returns current GP info",
+            "Layout wraps app in ThemeProvider",
+            "Build passes"
+          ],
+          "context": {
+            "files": ["src/app/layout.tsx", "src/lib/f1/calendar.ts"],
+            "hints": ["Use CSS custom properties so Tailwind classes can reference them via arbitrary values"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "F4: Qualifying System",
+      "tasks": [
+        {
+          "id": "4.1",
+          "title": "Create qualifying engine",
+          "description": "Create src/lib/race/qualifying.ts. Implement calculateLapTime(carStats: CarStats, noise: number): number — converts car stats to lap time (lower is better). Base time ~90s, each component reduces time. Implement runQualifying(drivers: QualifyingDriver[]): QualifyingResult[] — simulates Q1 (all 20, eliminate bottom 5), Q2 (15, eliminate bottom 5), Q3 (top 10 fight for pole). Each session: lapTime = calculateLapTime(stats) + small random variance. Export types QualifyingDriver {profileId, name, carStats, isBot} and QualifyingResult {profileId, q1Time, q2Time?, q3Time?, finalPosition, eliminatedIn?}.",
+          "priority": 1,
+          "passes": false,
+          "tests": { "command": "npm run test" },
+          "acceptance": [
+            "Lap times inversely correlated with car stats",
+            "Q1 eliminates positions 16-20",
+            "Q2 eliminates positions 11-15",
+            "Q3 determines top 10 grid",
+            "Deterministic given same seed",
+            "Typecheck passes"
+          ],
+          "context": {
+            "files": ["src/lib/race/car-components.ts"],
+            "hints": ["Use seeded RNG for deterministic results — seed = gpSlug + profileId"]
+          }
+        },
+        {
+          "id": "4.2",
+          "title": "Write qualifying engine tests",
+          "description": "Create src/lib/race/qualifying.test.ts. Test: driver with best stats gets pole (most of the time). Test: Q1/Q2 elimination works correctly (5 eliminated each). Test: 20 drivers produce 20 results. Test: deterministic with same seed. Test: bots participate like real drivers. Test: all drivers have valid lap times (no NaN/Infinity).",
+          "priority": 2,
+          "passes": false,
+          "tests": { "command": "npm run test" },
+          "acceptance": [
+            "All tests pass",
+            "Edge cases covered"
+          ],
+          "context": {
+            "files": ["src/lib/race/qualifying.ts"],
+            "hints": []
+          }
+        },
+        {
+          "id": "4.3",
+          "title": "Create qualifying update cron API route",
+          "description": "Create src/app/api/cron/update-qualifying/route.ts. GET handler: verify CRON_SECRET. Check if current GP is in qualifying phase (Mon-Fri). For each grid in active GP: fetch latest activity_snapshots for all grid members, calculate car components, run qualifying simulation, upsert results to qualifying_results table. Return summary JSON.",
+          "priority": 3,
+          "passes": false,
+          "tests": { "command": "npm run build" },
+          "acceptance": [
+            "Cron auth via CRON_SECRET header",
+            "Only runs during qualifying phase",
+            "Updates qualifying_results for all grids",
+            "Handles bots (generates random stats for them)",
+            "Build passes"
+          ],
+          "context": {
+            "files": ["src/app/api/cron/sync-activity/route.ts", "src/lib/race/qualifying.ts", "src/lib/f1/calendar.ts"],
+            "hints": ["Follow same auth pattern as existing cron routes"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "F5: Race Simulation Engine",
+      "tasks": [
+        {
+          "id": "5.1",
+          "title": "Create race simulation engine with narrative events",
+          "description": "Create src/lib/race/simulation.ts. Implement simulateRace(drivers: RaceDriver[], config: RaceConfig): RaceSimulationResult. RaceConfig: {totalLaps: number, hasSprint: boolean, seed: string, weatherRoll: number}. Simulation loop per lap: calculate overtake probability (motor stat vs defender aero), pit stop events (strategy stat), DNF probability (inverse of reliability), safety car (random, 5% per lap), rain (random, based on weatherRoll). Generate narrative events array: {lap, type, description, involvedDrivers}. Event descriptions should be exciting F1-style text. Types: 'overtake', 'defense', 'pit_stop', 'dnf', 'safety_car', 'rain', 'fastest_lap', 'drs'. Deterministic given same seed.",
+          "priority": 1,
+          "passes": false,
+          "tests": { "command": "npm run test" },
+          "acceptance": [
+            "Simulation produces positions for all 20 drivers",
+            "Events generated for 50-70 laps (race) or 15-25 laps (sprint)",
+            "DNF possible for low reliability drivers",
+            "Overtakes influenced by motor/aero stats",
+            "Safety car reshuffles gaps",
+            "Rain benefits high tire_mgmt",
+            "Deterministic with same seed",
+            "Typecheck passes"
+          ],
+          "context": {
+            "files": ["src/lib/race/car-components.ts", "src/lib/race/scoring.ts"],
+            "hints": [
+              "Use simple seeded PRNG: seed-based LCG or xorshift",
+              "Narrative templates: 'Lap {n}: {driver} overtakes {other} with DRS on the main straight!'",
+              "Keep ~20-40 events per race, not one per lap"
+            ]
+          }
+        },
+        {
+          "id": "5.2",
+          "title": "Write race simulation tests",
+          "description": "Create src/lib/race/simulation.test.ts. Test: 20 drivers in, 20 results out (some may DNF). Test: higher stats driver generally finishes better. Test: deterministic with same seed. Test: events array is non-empty and has correct structure. Test: sprint race has fewer laps. Test: safety car event reshuffles gaps. Test: DNF drivers get 0 points. Test: fastest lap awarded to one driver only.",
+          "priority": 2,
+          "passes": false,
+          "tests": { "command": "npm run test" },
+          "acceptance": [
+            "All tests pass",
+            "Statistical tests allow for RNG variance"
+          ],
+          "context": {
+            "files": ["src/lib/race/simulation.ts"],
+            "hints": ["For statistical tests, run simulation 100 times and check majority trend"]
+          }
+        },
+        {
+          "id": "5.3",
+          "title": "Update scoring module for sprint race points",
+          "description": "Update src/lib/race/scoring.ts. Add SPRINT_POINTS = [8,7,6,5,4,3,2,1]. Add getSprintPointsForPosition(position). Update calculateRacePoints to accept isSprint parameter. No fastest lap bonus in sprints. Update StandingsEntry to include sprint results separately. Update buildSeasonStandings to handle both race and sprint entries.",
+          "priority": 3,
+          "passes": false,
+          "tests": { "command": "npm run test" },
+          "acceptance": [
+            "Sprint points: 8-7-6-5-4-3-2-1 for top 8",
+            "No fastest lap bonus in sprint",
+            "Existing race scoring unchanged",
+            "Existing tests still pass",
+            "Typecheck passes"
+          ],
+          "context": {
+            "files": ["src/lib/race/scoring.ts", "src/lib/race/scoring.test.ts"],
+            "hints": ["Add new tests for sprint scoring"]
+          }
+        },
+        {
+          "id": "5.4",
+          "title": "Create race simulation cron API route",
+          "description": "Create src/app/api/cron/simulate-race/route.ts. GET handler with CRON_SECRET auth. Check if today is race day (or sprint day) for current GP. For each grid: fetch qualifying results for grid positions, fetch car stats for all drivers, run simulateRace, store results in race_results table, update profiles.total_points, check and award achievements. For sprint weekends: run sprint on Saturday, race on Sunday. Return summary.",
+          "priority": 4,
+          "passes": false,
+          "tests": { "command": "npm run build" },
+          "acceptance": [
+            "Only runs on race/sprint day",
+            "Uses qualifying positions as grid",
+            "Stores full event log in race_results.events_log",
+            "Awards correct points (race vs sprint)",
+            "Updates total_points on profiles",
+            "Build passes"
+          ],
+          "context": {
+            "files": ["src/app/api/cron/update-qualifying/route.ts", "src/lib/race/simulation.ts", "src/lib/race/scoring.ts"],
+            "hints": ["Follow same pattern as qualifying cron"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "F6: Grid Matchmaking & Divisions",
+      "tasks": [
+        {
+          "id": "6.1",
+          "title": "Create matchmaking and bot generation module",
+          "description": "Create src/lib/race/matchmaking.ts. Implement assignToGrid(profileId, divisionId, gpId): assigns player to a grid in their division for the GP. If no grid has space (<20), create new one. Implement fillGridWithBots(gridId): fill remaining slots to 20 with bots. Bot names: use F1 legend names (Senna, Prost, Schumacher, etc. — 30+ names). Bot stats: random but clustered by division (F3=low, F2=mid, F1=high). Implement promoteRelegate(gpId): after race, top 3 of each grid move up a division, bottom 3 move down. F1 top stays, F3 bottom stays.",
+          "priority": 1,
+          "passes": false,
+          "tests": { "command": "npm run test" },
+          "acceptance": [
+            "New users assigned to F3 grid",
+            "Grids never exceed 20",
+            "Bots fill remaining slots",
+            "Bot stats appropriate for division level",
+            "Promotion: top 3 move up (except F1)",
+            "Relegation: bottom 3 move down (except F3)",
+            "Typecheck passes"
+          ],
+          "context": {
+            "files": ["src/lib/supabase/admin.ts"],
+            "hints": ["Bot profile entries use is_bot=true in grid_entries, no real profile row needed"]
+          }
+        },
+        {
+          "id": "6.2",
+          "title": "Write matchmaking and bot tests",
+          "description": "Create src/lib/race/matchmaking.test.ts. Test: new player gets F3 grid. Test: grid fills to exactly 20 with bots. Test: bots have appropriate stats per division. Test: promotion moves top 3 up. Test: relegation moves bottom 3 down. Test: F1 top and F3 bottom stay put. Test: multiple grids created when first is full.",
+          "priority": 2,
+          "passes": false,
+          "tests": { "command": "npm run test" },
+          "acceptance": [
+            "All tests pass",
+            "Promotion/relegation edge cases covered"
+          ],
+          "context": {
+            "files": ["src/lib/race/matchmaking.ts"],
+            "hints": ["Mock Supabase client for unit tests"]
+          }
+        },
+        {
+          "id": "6.3",
+          "title": "Create division promotion/relegation cron API route",
+          "description": "Create src/app/api/cron/update-divisions/route.ts. GET handler with CRON_SECRET auth. Runs after race simulation. For each grid of finished GP: get final standings, promote top 3, relegate bottom 3, update profiles.division_id. Log movements for display on leaderboard.",
+          "priority": 3,
+          "passes": false,
+          "tests": { "command": "npm run build" },
+          "acceptance": [
+            "Runs after race simulation only",
+            "Correct promotion/relegation applied",
+            "Profile division updated",
+            "Build passes"
+          ],
+          "context": {
+            "files": ["src/lib/race/matchmaking.ts", "src/app/api/cron/simulate-race/route.ts"],
+            "hints": ["Can be triggered as part of simulate-race cron, or separately"]
+          }
+        },
+        {
+          "id": "6.4",
+          "title": "Add grid assignment to auth callback",
+          "description": "Update src/app/(auth)/callback/route.ts. After creating/updating profile: check if user has a grid for the current GP. If not, call assignToGrid to place them in an F3 grid. Ensure first sync runs and car_stats are initialized.",
+          "priority": 4,
+          "passes": false,
+          "tests": { "command": "npm run build" },
+          "acceptance": [
+            "New users get assigned to F3 grid on first login",
+            "Existing users without grid for current GP get assigned",
+            "car_stats initialized with defaults",
+            "Build passes"
+          ],
+          "context": {
+            "files": ["src/app/(auth)/callback/route.ts", "src/lib/race/matchmaking.ts"],
+            "hints": ["Handle case where there's no active GP (off-season)"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "F7: Rivalry System",
+      "tasks": [
+        {
+          "id": "7.1",
+          "title": "Create rivalry detection module",
+          "description": "Create src/lib/race/rivalries.ts. Implement detectRivals(profileId, gridId): find 1-2 closest drivers in championship standings within the same grid. Consider: point difference < 15, position difference <= 3. Implement updateRivalries(gpId): after each race, recalculate rivalries for all drivers in all grids. Store rival_id on profiles table. Implement getRivalComparison(profileId, rivalId): returns side-by-side stats comparison {yourStats, rivalStats, yourPoints, rivalPoints, headToHead: {wins, losses}}.",
+          "priority": 1,
+          "passes": false,
+          "tests": { "command": "npm run test" },
+          "acceptance": [
+            "Rivals are closest in championship within same grid",
+            "Returns 1-2 rivals max",
+            "Comparison includes all relevant stats",
+            "Head-to-head record tracked",
+            "Typecheck passes"
+          ],
+          "context": {
+            "files": ["src/lib/supabase/admin.ts"],
+            "hints": ["Rivalry can be with a bot too — adds narrative"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "F8: Home Page with GP Theme",
+      "tasks": [
+        {
+          "id": "8.1",
+          "title": "Create home page hero with GP countdown and theme",
+          "description": "Rewrite src/app/page.tsx. Server component that fetches: current/next GP from calendar, top 3 from global championship (from Supabase). Render: hero section with GP name, country flag emoji, circuit name, countdown timer to next event (qualifying or race). Apply GP theme colors via CSS custom properties. Show GP status badge ('Qualifying Live', 'Race Day', 'Next Race In X Days'). Below hero: top 3 drivers preview cards. CTA button 'Sign in with GitHub to race' for unauthenticated users, 'Go to Dashboard' for authenticated.",
+          "priority": 1,
+          "passes": false,
+          "tests": { "command": "npm run build" },
+          "acceptance": [
+            "Hero shows current/next GP with correct info",
+            "Countdown timer works (client component for timer only)",
+            "GP theme colors applied",
+            "Top 3 drivers shown",
+            "Auth-aware CTA button",
+            "Mobile responsive",
+            "Build passes"
+          ],
+          "context": {
+            "files": ["src/app/page.tsx", "src/lib/f1/calendar.ts", "src/components/theme-provider.tsx"],
+            "hints": ["Extract countdown to a small client component, keep rest as server component"]
+          }
+        },
+        {
+          "id": "8.2",
+          "title": "Create countdown timer client component",
+          "description": "Create src/components/countdown-timer.tsx. Client component that takes targetDate: string prop. Shows days:hours:minutes:seconds countdown. Updates every second. When target is past, shows 'LIVE' or 'Finished' based on context prop. Styled with GP theme colors. Responsive: large on desktop, compact on mobile.",
+          "priority": 2,
+          "passes": false,
+          "tests": { "command": "npm run build" },
+          "acceptance": [
+            "Countdown ticks every second",
+            "Shows correct time remaining",
+            "Shows 'LIVE' when past start but before end",
+            "Responsive design",
+            "Build passes"
+          ],
+          "context": {
+            "files": [],
+            "hints": ["Use useEffect with setInterval, cleanup on unmount"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "F9: Dashboard — Driver Card & Car Components",
+      "tasks": [
+        {
+          "id": "9.1",
+          "title": "Create driver card component",
+          "description": "Create src/components/driver/driver-card.tsx. Visual card inspired by F1/FIFA cards. Props: profile (avatar, username, carNumber, division, carStats, totalPoints, championshipPosition). Layout: avatar at top, name + number, division badge (F3=bronze, F2=silver, F1=gold), 5 component bars (power_unit, aero, reliability, tire_mgmt, strategy) with labels and values, overall rating circle. Card border color based on division. Use Tailwind for all styling.",
+          "priority": 1,
+          "passes": false,
+          "tests": { "command": "npm run build" },
+          "acceptance": [
+            "Card renders all driver info",
+            "Division badge with correct color",
+            "5 component bars with labels",
+            "Overall rating displayed",
+            "Responsive (works in grid or standalone)",
+            "Build passes"
+          ],
+          "context": {
+            "files": ["src/components/driver/driver-card.tsx"],
+            "hints": ["Replace existing driver-card.tsx completely with new design"]
+          }
+        },
+        {
+          "id": "9.2",
+          "title": "Create car components visualization",
+          "description": "Create src/components/dashboard/car-stats.tsx. Shows 5 car components as styled progress bars or radar chart. Each component: icon/emoji, name, value (0-100), progress bar colored by GP theme. Include tooltip explaining how to improve each component (e.g., 'Improve Power Unit by pushing more commits'). Show delta from last GP (+5, -2 etc.). Overall car rating as a large number.",
+          "priority": 2,
+          "passes": false,
+          "tests": { "command": "npm run build" },
+          "acceptance": [
+            "5 components displayed with progress bars",
+            "Tooltips explain improvement path",
+            "Delta shown from previous GP",
+            "Overall rating calculated and displayed",
+            "Themed with GP colors",
+            "Build passes"
+          ],
+          "context": {
+            "files": [],
+            "hints": ["Delta requires fetching previous GP's activity_snapshot"]
+          }
+        },
+        {
+          "id": "9.3",
+          "title": "Rebuild dashboard page with new components",
+          "description": "Rewrite src/app/dashboard/page.tsx and dashboard-client.tsx. Server component fetches: user profile with car_stats, current GP info, grid assignment, qualifying position (if qualifying active), rival comparison, recent achievements. Layout: driver card (left/top on mobile), car stats (center), next event card with status (qualifying live / race countdown), rival comparison card, recent achievements. Remove old sync button and color picker from v1. Add 'Sync Now' small button that hits /api/github/sync.",
+          "priority": 3,
+          "passes": false,
+          "tests": { "command": "npm run build" },
+          "acceptance": [
+            "Dashboard shows driver card with current stats",
+            "Car components visualization displayed",
+            "Next event (qualifying/race) with status",
+            "Rival comparison shown if rival exists",
+            "Sync button works",
+            "Mobile responsive layout",
+            "Build passes"
+          ],
+          "context": {
+            "files": ["src/app/dashboard/page.tsx", "src/app/dashboard/dashboard-client.tsx", "src/components/driver/driver-card.tsx", "src/components/dashboard/car-stats.tsx"],
+            "hints": ["Keep dashboard-client.tsx for interactive parts (sync button, etc.)"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "F10: Qualifying Page",
+      "tasks": [
+        {
+          "id": "10.1",
+          "title": "Create qualifying grid display component",
+          "description": "Create src/components/qualifying/qualifying-grid.tsx. Shows all 20 drivers in qualifying order. For each: position, driver name (or bot name), avatar, lap time, gap to P1, eliminated badge (if out in Q1/Q2). Highlight current user's row. Visual separation between Q3 (top 10, gold bg), Q2 (11-15, silver bg), Q1 eliminated (16-20, red bg). Animate position changes on data refresh.",
+          "priority": 1,
+          "passes": false,
+          "tests": { "command": "npm run build" },
+          "acceptance": [
+            "20 drivers displayed in qualifying order",
+            "Q1/Q2/Q3 zones visually distinct",
+            "Current user highlighted",
+            "Lap times and gaps shown",
+            "Bot drivers distinguishable but integrated",
+            "Build passes"
+          ],
+          "context": {
+            "files": [],
+            "hints": ["Use CSS transitions for smooth position changes"]
+          }
+        },
+        {
+          "id": "10.2",
+          "title": "Create qualifying page with live status",
+          "description": "Create src/app/gp/[slug]/qualifying/page.tsx. Server component: fetch GP by slug from calendar, fetch qualifying_results for user's grid. Show: GP header (name, circuit, flag), qualifying status (Q1/Q2/Q3 based on time in qualifying period — first 33% Q1, next 33% Q2, last 33% Q3), qualifying grid component, countdown to qualifying end. If qualifying not started: show 'Qualifying starts [date]'. If finished: show final grid with 'Grid Locked' badge.",
+          "priority": 2,
+          "passes": false,
+          "tests": { "command": "npm run build" },
+          "acceptance": [
+            "Page renders for valid GP slug",
+            "Shows correct qualifying phase (Q1/Q2/Q3)",
+            "Grid data fetched and displayed",
+            "Countdown to qualifying end",
+            "Pre/post qualifying states handled",
+            "Build passes"
+          ],
+          "context": {
+            "files": ["src/lib/f1/calendar.ts", "src/components/qualifying/qualifying-grid.tsx"],
+            "hints": ["Q1/Q2/Q3 phases are simulated based on time elapsed in qualifying period"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "F11: Race Result Page",
+      "tasks": [
+        {
+          "id": "11.1",
+          "title": "Create race event timeline component",
+          "description": "Create src/components/race/event-timeline.tsx. Scrollable timeline of race events. Each event: lap number badge, event icon (overtake=arrows, pit=wrench, dnf=red flag, safety_car=yellow, rain=cloud, fastest_lap=purple), narrative text, involved drivers with mini avatars. Filter buttons: All, Overtakes, Pit Stops, Incidents. Highlight events involving current user or their rival in a different color. Auto-scroll to latest event option.",
+          "priority": 1,
+          "passes": false,
+          "tests": { "command": "npm run build" },
+          "acceptance": [
+            "Timeline renders events chronologically by lap",
+            "Icons match event types",
+            "Filter buttons work",
+            "User/rival events highlighted",
+            "Smooth scrolling",
+            "Build passes"
+          ],
+          "context": {
+            "files": [],
+            "hints": ["Events come from race_results.events_log JSONB field"]
+          }
+        },
+        {
+          "id": "11.2",
+          "title": "Create podium celebration component",
+          "description": "Create src/components/race/podium.tsx. Visual podium for top 3 finishers. P1 center (tallest), P2 left, P3 right. Each: driver avatar (large), name, team/division badge, points earned, position change from grid (green up arrow, red down). Confetti CSS animation on page load. Styled with GP theme colors.",
+          "priority": 2,
+          "passes": false,
+          "tests": { "command": "npm run build" },
+          "acceptance": [
+            "3 podium positions displayed correctly",
+            "Position change from grid shown",
+            "Confetti animation plays",
+            "GP themed colors",
+            "Build passes"
+          ],
+          "context": {
+            "files": [],
+            "hints": ["CSS confetti: use @keyframes with random positioned colored squares"]
+          }
+        },
+        {
+          "id": "11.3",
+          "title": "Create race results table component",
+          "description": "Create src/components/race/results-table.tsx. Full classification table: position, driver (avatar+name), grid position, position change (+/-), laps completed, gap to leader, pit stops, points earned, fastest lap indicator (purple). DNF drivers at bottom with DNF badge and reason. Highlight current user row.",
+          "priority": 3,
+          "passes": false,
+          "tests": { "command": "npm run build" },
+          "acceptance": [
+            "All 20 positions shown",
+            "Position change from grid displayed",
+            "DNF drivers shown separately",
+            "Fastest lap highlighted in purple",
+            "Current user highlighted",
+            "Build passes"
+          ],
+          "context": {
+            "files": [],
+            "hints": ["Reuse similar table patterns from existing leaderboard components"]
+          }
+        },
+        {
+          "id": "11.4",
+          "title": "Create race result page",
+          "description": "Create src/app/gp/[slug]/race/page.tsx. Server component: fetch GP by slug, fetch race_results for user's grid, fetch qualifying_results for grid comparison. Layout: GP header with theme, podium (top 3), event timeline, full results table, share button. If race hasn't happened yet: show countdown. If sprint weekend: tabs for Sprint and Race results. Share button generates URL /gp/[slug]/result/[username].",
+          "priority": 4,
+          "passes": false,
+          "tests": { "command": "npm run build" },
+          "acceptance": [
+            "Page renders for valid GP slug",
+            "Podium, timeline, results table all rendered",
+            "Sprint/Race tabs for sprint weekends",
+            "Pre-race state shows countdown",
+            "Share button present",
+            "Build passes"
+          ],
+          "context": {
+            "files": ["src/components/race/podium.tsx", "src/components/race/event-timeline.tsx", "src/components/race/results-table.tsx"],
+            "hints": ["Sprint results use is_sprint=true in race_results query"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "F12: Calendar Page",
+      "tasks": [
+        {
+          "id": "12.1",
+          "title": "Create GP calendar page",
+          "description": "Create src/app/calendar/page.tsx. Server component showing all 24 GPs in a vertical timeline. Each GP card: round number, GP name, country flag, circuit name, date range, status badge (finished/qualifying/upcoming), user's result if finished (position, points). Current/active GP highlighted with glow effect. Sprint weekends marked with sprint badge. Clicking a GP links to /gp/[slug]/qualifying or /gp/[slug]/race depending on status.",
+          "priority": 1,
+          "passes": false,
+          "tests": { "command": "npm run build" },
+          "acceptance": [
+            "All 24 GPs displayed",
+            "Correct status for each GP",
+            "User results shown for finished GPs",
+            "Current GP highlighted",
+            "Sprint badges shown",
+            "Links to correct pages",
+            "Mobile responsive",
+            "Build passes"
+          ],
+          "context": {
+            "files": ["src/lib/f1/calendar.ts"],
+            "hints": ["Fetch user's race_results for all finished GPs in one query"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "F13: Leaderboard & Championship Standings",
+      "tasks": [
+        {
+          "id": "13.1",
+          "title": "Rebuild leaderboard page with divisions",
+          "description": "Rewrite src/app/leaderboard/page.tsx. Server component with tabs: user's division grid standings, F1 Division (top), Global Championship. Each tab shows standings table: position, driver card mini (avatar+name+number), division badge, total points, wins, podiums, position trend mini-chart (last 5 GPs). Promotion zone (top 3) in green, relegation zone (bottom 3) in red. Highlight current user.",
+          "priority": 1,
+          "passes": false,
+          "tests": { "command": "npm run build" },
+          "acceptance": [
+            "Division tabs work",
+            "Standings sorted by total points",
+            "Promotion/relegation zones colored",
+            "Wins and podiums counted correctly",
+            "Current user highlighted",
+            "Mobile responsive",
+            "Build passes"
+          ],
+          "context": {
+            "files": ["src/app/leaderboard/page.tsx", "src/lib/race/scoring.ts"],
+            "hints": ["Fetch race_results grouped by profile for stats calculation"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "F14: Driver Profile Page",
+      "tasks": [
+        {
+          "id": "14.1",
+          "title": "Rebuild driver profile page",
+          "description": "Rewrite src/app/driver/[username]/page.tsx. Server component. Fetch profile by github_username. Show: full driver card, season stats (races, wins, podiums, points, best finish, best qualifying), car components with history chart, race history table (all GPs: position, grid, points per GP), achievements/badges grid. If viewing own profile: show edit car color button. 404 if username not found.",
+          "priority": 1,
+          "passes": false,
+          "tests": { "command": "npm run build" },
+          "acceptance": [
+            "Profile renders for valid username",
+            "All season stats calculated correctly",
+            "Race history shows all GP results",
+            "Achievements displayed",
+            "404 for invalid username",
+            "Mobile responsive",
+            "Build passes"
+          ],
+          "context": {
+            "files": ["src/app/driver/[username]/page.tsx", "src/components/driver/driver-card.tsx"],
+            "hints": ["Reuse driver-card component with full size variant"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "F15: Achievements Engine",
+      "tasks": [
+        {
+          "id": "15.1",
+          "title": "Create achievement checker module",
+          "description": "Create src/lib/race/achievements.ts. Implement checkAchievements(profileId, gpId, raceResult, qualifyingResult): Achievement[]. Check each achievement criteria against results: pole_position (P1 in qualifying), race_winner (P1 in race), podium (top 3), comeback_king (gained 5+ positions), consistency_is_key (7/7 active days), rain_master (won race with rain event), senna (3 consecutive poles — query history), the_professor (50+ reviews in season — query activity_snapshots), first_points, first_win, hat_trick (pole+win+fastest), grand_chelem (pole+win+fastest+led_every_lap). Implement awardAchievements(profileId, achievements, gpId): insert into profile_achievements, skip if already earned.",
+          "priority": 1,
+          "passes": false,
+          "tests": { "command": "npm run test" },
+          "acceptance": [
+            "Each achievement correctly detected",
+            "No duplicate awards",
+            "Historical checks work (consecutive poles, season totals)",
+            "Typecheck passes"
+          ],
+          "context": {
+            "files": ["supabase/migrations/005_achievements.sql"],
+            "hints": ["Some achievements need historical data — query past GP results"]
+          }
+        },
+        {
+          "id": "15.2",
+          "title": "Create achievements display page",
+          "description": "Create src/app/achievements/page.tsx. Server component showing all achievements in a grid. Each: icon, name, description, locked/unlocked state, unlock date and GP if unlocked. Categories: Race, Qualifying, Season, Contribution. Progress indicators for cumulative achievements (e.g., 'The Professor: 32/50 reviews'). Filter by category.",
+          "priority": 2,
+          "passes": false,
+          "tests": { "command": "npm run build" },
+          "acceptance": [
+            "All achievements displayed",
+            "Locked/unlocked states correct",
+            "Category filters work",
+            "Progress shown for cumulative achievements",
+            "Build passes"
+          ],
+          "context": {
+            "files": ["src/lib/race/achievements.ts"],
+            "hints": ["Fetch all achievements + user's profile_achievements in one query"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "F16: Share Cards & OG Images",
+      "tasks": [
+        {
+          "id": "16.1",
+          "title": "Create OG image route for race results",
+          "description": "Create src/app/gp/[slug]/result/[username]/og/route.tsx. Use @vercel/og ImageResponse. Generate 1200x630 image showing: GP name + circuit, driver name + avatar, final position (large), grid → finish (e.g., P5 → P2), points earned, division badge. Styled with GP theme colors. This serves as the og:image for share URLs.",
+          "priority": 1,
+          "passes": false,
+          "tests": { "command": "npm run build" },
+          "acceptance": [
+            "OG image generates for valid GP + username",
+            "Shows correct race result data",
+            "GP themed colors applied",
+            "Image is 1200x630",
+            "Build passes"
+          ],
+          "context": {
+            "files": ["src/app/share/[cardId]/page.tsx"],
+            "hints": ["Use Vercel OG with JSX, fetch data from Supabase"]
+          }
+        },
+        {
+          "id": "16.2",
+          "title": "Create shareable result page",
+          "description": "Create src/app/gp/[slug]/result/[username]/page.tsx. Public page showing one driver's result for a GP. Metadata: og:title, og:description, og:image pointing to the OG route. Content: mini podium if top 3, result card, position change, points, key events involving this driver. Twitter share button with pre-filled text: 'I finished P{x} at the {gpName}! 🏎️ {url}'. Link to full race results.",
+          "priority": 2,
+          "passes": false,
+          "tests": { "command": "npm run build" },
+          "acceptance": [
+            "Page renders correct result for driver+GP combo",
+            "OG meta tags set correctly",
+            "Twitter share button with pre-filled text",
+            "Link to full race results",
+            "Build passes"
+          ],
+          "context": {
+            "files": [],
+            "hints": ["Use Next.js metadata export for OG tags"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "F17: Vercel Cron Configuration & Integration",
+      "tasks": [
+        {
+          "id": "17.1",
+          "title": "Update vercel.json cron configuration",
+          "description": "Update vercel.json to add new cron routes: /api/cron/sync-activity (0 */6 * * * — every 6h, keep existing), /api/cron/update-qualifying (0 */6 * * 1-5 — every 6h Mon-Fri), /api/cron/simulate-race (0 14 * * 0 — Sundays at 14:00 UTC as default, actual trigger should check GP calendar), /api/cron/update-divisions (0 18 * * 0 — Sundays at 18:00 after race). Remove old /api/cron/calculate-race route. Update old sync-activity route to also trigger qualifying update if in qualifying phase.",
+          "priority": 1,
+          "passes": false,
+          "tests": { "command": "npm run build" },
+          "acceptance": [
+            "vercel.json has all 4 cron entries",
+            "Old calculate-race route removed or replaced",
+            "Schedules align with GP lifecycle",
+            "Build passes"
+          ],
+          "context": {
+            "files": ["vercel.json"],
+            "hints": ["Race simulation ideally triggers at the actual GP race time, but a fixed Sunday schedule works for MVP"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "F18: Polish & Mobile Responsive",
+      "tasks": [
+        {
+          "id": "18.1",
+          "title": "Global styles and GP theme CSS integration",
+          "description": "Update src/app/globals.css. Define CSS custom properties for GP theming: --gp-primary, --gp-secondary, --gp-accent, --gp-bg with fallback defaults (F1 red/black). Add utility classes for common patterns: .card (rounded, shadow, border), .badge-f1/.badge-f2/.badge-f3 (division badges), .position-up/.position-down (green/red arrows), .stat-bar (progress bar base). Ensure dark mode support. Mobile-first breakpoints.",
+          "priority": 1,
+          "passes": false,
+          "tests": { "command": "npm run build" },
+          "acceptance": [
+            "GP theme custom properties work",
+            "Utility classes defined",
+            "Dark mode supported",
+            "Mobile-first responsive",
+            "Build passes"
+          ],
+          "context": {
+            "files": ["src/app/globals.css"],
+            "hints": ["Tailwind v4 uses CSS-first config — define custom utilities via @layer"]
+          }
+        },
+        {
+          "id": "18.2",
+          "title": "Navigation bar with GP branding",
+          "description": "Create src/components/nav.tsx. Responsive nav bar: logo/brand ('GitRace'), GP status indicator (current GP name + mini countdown), nav links (Dashboard, Calendar, Leaderboard, Achievements), user avatar dropdown (profile, settings, logout). Mobile: hamburger menu. Nav bar background uses GP accent color subtly.",
+          "priority": 2,
+          "passes": false,
+          "tests": { "command": "npm run build" },
+          "acceptance": [
+            "Nav renders on all pages",
+            "GP status shown",
+            "All links work",
+            "Mobile hamburger menu",
+            "Auth-aware (show login vs user menu)",
+            "Build passes"
+          ],
+          "context": {
+            "files": ["src/app/layout.tsx"],
+            "hints": ["Add Nav to layout.tsx, conditionally show based on auth state"]
+          }
+        }
+      ]
+    }
+  ]
+}
