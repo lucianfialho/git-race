@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { getMostRelevantGP, getGPStatus } from "@/lib/f1/calendar";
+import { getMostRelevantGP, getGPStatus, getNow } from "@/lib/f1/calendar";
 import { GPHero } from "@/components/gp-hero";
 
 export default async function HomePage() {
   const supabase = await createClient();
-  const now = new Date();
+  const now = getNow();
   const nextGP = getMostRelevantGP(now);
   const gpStatus = nextGP ? getGPStatus(nextGP, now) : null;
 

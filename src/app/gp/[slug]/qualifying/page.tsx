@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getGPBySlug, getGPStatus } from "@/lib/f1/calendar";
+import { getGPBySlug, getGPStatus, getNow } from "@/lib/f1/calendar";
 import { CountdownTimer } from "@/components/countdown-timer";
 
 export default async function QualifyingPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -8,7 +8,7 @@ export default async function QualifyingPage({ params }: { params: Promise<{ slu
   const gp = getGPBySlug(slug);
   if (!gp) notFound();
 
-  const now = new Date();
+  const now = getNow();
   const status = getGPStatus(gp, now);
   const qualiStart = new Date(gp.dates.qualiStart);
   const qualiEnd = new Date(gp.dates.qualiEnd);

@@ -3,7 +3,7 @@ import { Titillium_Web } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Nav } from "@/components/nav";
-import { getCurrentGP, getMostRelevantGP, getGPStatus, getCurrentTheme } from "@/lib/f1/calendar";
+import { getMostRelevantGP, getGPStatus, getCurrentTheme, getNow } from "@/lib/f1/calendar";
 import { createClient } from "@/lib/supabase/server";
 
 const titillium = Titillium_Web({
@@ -27,7 +27,7 @@ export default async function RootLayout({
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  const now = new Date();
+  const now = getNow();
   const gp = getMostRelevantGP(now);
   const theme = getCurrentTheme(now);
   const status = gp ? getGPStatus(gp, now) : null;

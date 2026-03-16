@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { F1_2025_CALENDAR, getGPStatus } from "@/lib/f1/calendar";
+import { F1_2025_CALENDAR, getGPStatus, getNow } from "@/lib/f1/calendar";
 
 const COUNTRY_FLAGS: Record<string, string> = {
   AU: "\u{1F1E6}\u{1F1FA}", CN: "\u{1F1E8}\u{1F1F3}", JP: "\u{1F1EF}\u{1F1F5}",
@@ -20,7 +20,7 @@ const STATUS_TAG: Record<string, { label: string; className: string }> = {
 };
 
 export default function CalendarPage() {
-  const now = new Date();
+  const now = getNow();
 
   return (
     <div className="min-h-screen bg-white">

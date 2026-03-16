@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { DashboardClient } from "./dashboard-client";
-import { getCurrentGP, getNextGP, getGPStatus } from "@/lib/f1/calendar";
+import { getCurrentGP, getNextGP, getGPStatus, getNow } from "@/lib/f1/calendar";
 
 export const metadata = {
   title: "Dashboard - GitRace Manager",
@@ -33,7 +33,7 @@ export default async function DashboardPage() {
     .single();
 
   // GP info
-  const now = new Date();
+  const now = getNow();
   const currentGP = getCurrentGP(now) ?? getNextGP(now);
   const gpStatus = currentGP ? getGPStatus(currentGP, now) : null;
 

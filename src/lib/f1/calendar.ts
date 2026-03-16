@@ -171,6 +171,16 @@ export const F1_2025_CALENDAR: GrandPrix[] = [
   },
 ];
 
+// Demo date override for development — set NEXT_PUBLIC_DEMO_DATE in .env.local
+// Example: NEXT_PUBLIC_DEMO_DATE=2025-07-30T12:00:00Z (Hungarian GP qualifying)
+export function getNow(): Date {
+  const demoDate = typeof window !== "undefined"
+    ? process.env.NEXT_PUBLIC_DEMO_DATE
+    : process.env.NEXT_PUBLIC_DEMO_DATE;
+  if (demoDate) return new Date(demoDate);
+  return new Date();
+}
+
 const DEFAULT_THEME: GPThemeColors = {
   primary: "#E10600",
   secondary: "#FFFFFF",
@@ -178,7 +188,7 @@ const DEFAULT_THEME: GPThemeColors = {
   bg: "#111111",
 };
 
-export function getGPStatus(gp: GrandPrix, now: Date = new Date()): GPStatus {
+export function getGPStatus(gp: GrandPrix, now: Date = getNow()): GPStatus {
   const qualiStart = new Date(gp.dates.qualiStart);
   const qualiEnd = new Date(gp.dates.qualiEnd);
   const raceDate = new Date(gp.dates.raceDate);
@@ -196,7 +206,7 @@ export function getGPStatus(gp: GrandPrix, now: Date = new Date()): GPStatus {
   return "upcoming";
 }
 
-export function getCurrentGP(now: Date = new Date()): GrandPrix | null {
+export function getCurrentGP(now: Date = getNow()): GrandPrix | null {
   // Find a GP that is currently active (qualifying, sprint, or race day)
   for (const gp of F1_2025_CALENDAR) {
     const status = getGPStatus(gp, now);
@@ -207,7 +217,7 @@ export function getCurrentGP(now: Date = new Date()): GrandPrix | null {
   return null;
 }
 
-export function getNextGP(now: Date = new Date()): GrandPrix | null {
+export function getNextGP(now: Date = getNow()): GrandPrix | null {
   for (const gp of F1_2025_CALENDAR) {
     const status = getGPStatus(gp, now);
     if (status === "upcoming") return gp;
@@ -217,7 +227,7 @@ export function getNextGP(now: Date = new Date()): GrandPrix | null {
 }
 
 // Returns the most relevant GP to display: current > next > last finished
-export function getMostRelevantGP(now: Date = new Date()): GrandPrix | null {
+export function getMostRelevantGP(now: Date = getNow()): GrandPrix | null {
   const current = getCurrentGP(now);
   if (current) return current;
 
@@ -239,15 +249,15 @@ export function getGPBySlug(slug: string): GrandPrix | null {
   return F1_2025_CALENDAR.find((gp) => gp.slug === slug) ?? null;
 }
 
-export function isQualifyingActive(gp: GrandPrix, now: Date = new Date()): boolean {
+export function isQualifyingActive(gp: GrandPrix, now: Date = getNow()): boolean {
   return getGPStatus(gp, now) === "qualifying";
 }
 
-export function isRaceDay(gp: GrandPrix, now: Date = new Date()): boolean {
+export function isRaceDay(gp: GrandPrix, now: Date = getNow()): boolean {
   return getGPStatus(gp, now) === "race_day";
 }
 
-export function getCurrentTheme(now: Date = new Date()): GPThemeColors {
+export function getCurrentTheme(now: Date = getNow()): GPThemeColors {
   const gp = getCurrentGP(now) ?? getNextGP(now);
   return gp?.themeColors ?? DEFAULT_THEME;
 }
