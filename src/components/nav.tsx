@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useGPTheme } from "@/lib/f1/theme-context";
+import { createClient } from "@/lib/supabase/client";
 
 function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
   const pathname = usePathname();
@@ -21,7 +22,15 @@ function NavLink({ href, children }: { href: string; children: React.ReactNode }
 
 export function Nav({ isAuthenticated }: { isAuthenticated: boolean }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const router = useRouter();
   const { gp, status } = useGPTheme();
+
+  const handleSignOut = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/");
+    router.refresh();
+  };
 
   const statusLabel =
     status === "qualifying" ? "Qualifying" :
@@ -50,6 +59,9 @@ export function Nav({ isAuthenticated }: { isAuthenticated: boolean }) {
           <>
             <NavLink href="/dashboard">Dashboard</NavLink>
             <NavLink href="/achievements">Achievements</NavLink>
+            <button onClick={handleSignOut} className="text-[#a3a3a3] text-sm font-medium hover:text-[#0a0a0a] transition-colors cursor-pointer">
+              Sign out
+            </button>
           </>
         ) : (
           <Link href="/login" className="f1-btn-primary text-sm px-4 py-2 rounded-lg font-semibold">
@@ -83,6 +95,7 @@ export function Nav({ isAuthenticated }: { isAuthenticated: boolean }) {
             <>
               <Link href="/dashboard" className="text-[#0a0a0a] py-2 font-medium" onClick={() => setMenuOpen(false)}>Dashboard</Link>
               <Link href="/achievements" className="text-[#0a0a0a] py-2 font-medium" onClick={() => setMenuOpen(false)}>Achievements</Link>
+              <button onClick={() => { handleSignOut(); setMenuOpen(false); }} className="text-[#a3a3a3] py-2 font-medium text-left cursor-pointer">Sign out</button>
             </>
           ) : (
             <Link href="/login" className="f1-btn-primary text-sm px-4 py-2 rounded-lg text-center font-semibold" onClick={() => setMenuOpen(false)}>
