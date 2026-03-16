@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { CarStats } from "@/lib/race/car-components";
-import { CarStatsDisplay } from "@/components/dashboard/car-stats";
+import { calculateOverallRating } from "@/lib/race/car-components";
 
 interface RivalData {
   id: string;
@@ -64,6 +64,16 @@ interface DashboardClientProps {
   } | null;
 }
 
+const CAR_COMPONENTS = [
+  { key: "power_unit" as const, label: "PWR", name: "Power Unit", hint: "Commits" },
+  { key: "aero" as const, label: "AER", name: "Aerodynamics", hint: "Pull Requests" },
+  { key: "reliability" as const, label: "REL", name: "Reliability", hint: "Daily Activity" },
+  { key: "tire_mgmt" as const, label: "TIR", name: "Tire Mgmt", hint: "Code Reviews" },
+  { key: "strategy" as const, label: "STR", name: "Strategy", hint: "Issues" },
+];
+
+const DIV_COLORS: Record<number, string> = { 1: "#a3a3a3", 2: "#0a0a0a", 3: "#e10600" };
+
 export function DashboardClient({ profile, rivals, latestSnapshot, currentGP }: DashboardClientProps) {
   const router = useRouter();
   const [syncing, setSyncing] = useState(false);
@@ -88,116 +98,170 @@ export function DashboardClient({ profile, rivals, latestSnapshot, currentGP }: 
     }
   };
 
+  const overall = calculateOverallRating(profile.car_stats);
   const isLive = currentGP?.status === "qualifying" || currentGP?.status === "sprint" || currentGP?.status === "race_day";
-
-  const DIVISION_BADGE_CLASS: Record<number, string> = {
-    1: "bg-[#f0f0f0] text-[#525252]",
-    2: "bg-[#0a0a0a] text-white",
-    3: "bg-[#e10600] text-white",
-  };
-  const badgeClass = DIVISION_BADGE_CLASS[profile.divisionLevel] ?? DIVISION_BADGE_CLASS[1];
+  const divColor = DIV_COLORS[profile.divisionLevel] ?? "#a3a3a3";
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-8 pb-6 border-b border-[#e5e5e5]">
-          <img
-            src={profile.avatar_url || `https://github.com/${profile.github_username}.png`}
-            alt={profile.github_username}
-            className="w-12 h-12 rounded-full"
-          />
-          <div className="flex-1">
-            <h1 className="font-bold text-xl text-[#0a0a0a]">{profile.github_username}</h1>
-            <div className="flex items-center gap-3 text-[#a3a3a3] text-sm">
-              <span className={`px-2 py-0.5 rounded text-xs font-bold ${badgeClass}`}>{profile.division}</span>
-              <span className="font-mono">#{profile.car_number}</span>
-              <span>{profile.total_points} pts</span>
+      {/* ─── Dark Hero: Driver Identity ─── */}
+      <section className="bg-[#0a0a0a] relative overflow-hidden">
+        <div className="absolute top-0 left-0 right-0 h-1" style={{ background: divColor }} />
+
+        <div className="max-w-4xl mx-auto px-4 md:px-8 py-8 md:py-10">
+          <div className="flex items-center justify-between gap-6">
+            {/* Driver info */}
+            <div className="flex items-center gap-5">
+              <img
+                src={profile.avatar_url || `https://github.com/${profile.github_username}.png`}
+                alt=""
+                className="w-16 h-16 md:w-20 md:h-20 rounded-full border-2"
+                style={{ borderColor: divColor }}
+              />
+              <div>
+                <div className="flex items-center gap-3">
+                  <h1 className="text-xl md:text-2xl font-black text-white uppercase tracking-tight">
+                    {profile.github_username}
+                  </h1>
+                  <span
+                    className="text-[10px] font-bold uppercase tracking-[0.15em] px-2 py-0.5 rounded-sm"
+                    style={{ background: divColor, color: profile.divisionLevel === 1 ? "#0a0a0a" : "#fff" }}
+                  >
+                    {profile.division}
+                  </span>
+                </div>
+                <div className="flex items-center gap-4 mt-1 text-white/40 text-sm">
+                  <span className="font-mono">#{profile.car_number}</span>
+                  <span className="font-bold tabular-nums">{profile.total_points} <span className="text-[10px] tracking-wider">PTS</span></span>
+                </div>
+              </div>
+            </div>
+
+            {/* Overall rating + Sync */}
+            <div className="flex items-center gap-4">
+              <div className="text-center hidden sm:block">
+                <p className="text-4xl md:text-5xl font-black text-white tabular-nums leading-none">{Math.round(overall)}</p>
+                <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/30 mt-1">Overall</p>
+              </div>
+              <button
+                onClick={handleSync}
+                disabled={syncing}
+                className="px-4 py-2 text-[11px] font-bold uppercase tracking-[0.15em] border border-white/20 text-white/60 hover:text-white hover:border-white/40 rounded-sm transition-colors disabled:opacity-30"
+              >
+                {syncing ? "Syncing..." : "Sync"}
+              </button>
             </div>
           </div>
-          <button
-            onClick={handleSync}
-            disabled={syncing}
-            className="f1-btn f1-btn-secondary text-xs rounded-lg"
-          >
-            {syncing ? "Syncing..." : "Sync GitHub"}
-          </button>
+          {syncMessage && <p className="text-white/40 text-xs mt-2">{syncMessage}</p>}
         </div>
-        {syncMessage && <p className="text-sm text-[#525252] mb-4 -mt-4">{syncMessage}</p>}
+      </section>
 
-        <div className="grid md:grid-cols-2 gap-6">
-          <CarStatsDisplay stats={profile.car_stats} />
+      {/* ─── Car Telemetry: 5 components as horizontal gauges ─── */}
+      <section className="border-b border-[#e5e5e5]">
+        <div className="max-w-4xl mx-auto px-4 md:px-8">
+          <div className="grid grid-cols-5 gap-0 divide-x divide-[#e5e5e5]">
+            {CAR_COMPONENTS.map(({ key, label, name, hint }) => {
+              const value = profile.car_stats[key];
+              return (
+                <div key={key} className="py-5 px-3 md:px-4 text-center group">
+                  <p className="text-2xl md:text-3xl font-black text-[#0a0a0a] tabular-nums leading-none">{Math.round(value)}</p>
+                  <div className="h-1 bg-[#f0f0f0] rounded-full overflow-hidden mt-2 mx-auto max-w-[80px]">
+                    <div className="h-full bg-[#0a0a0a] rounded-full transition-all duration-700" style={{ width: `${value}%` }} />
+                  </div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#0a0a0a] mt-2">{label}</p>
+                  <p className="text-[9px] text-[#a3a3a3] mt-0.5 hidden md:block">{hint}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
 
+      {/* ─── Main Content ─── */}
+      <section className="max-w-4xl mx-auto px-4 md:px-8 py-8">
+        <div className="grid md:grid-cols-[1fr_320px] gap-8">
+          {/* Left column */}
           <div className="space-y-6">
-            {/* GP Card */}
+            {/* Race Status */}
             {currentGP && (
-              <div className="rounded-sm border border-[#e5e5e5] p-6 bg-white">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-semibold text-[#a3a3a3] uppercase tracking-wider">
+              <div className="border border-[#e5e5e5] rounded-sm overflow-hidden">
+                <div className="bg-[#fafafa] px-5 py-3 border-b border-[#e5e5e5] flex items-center justify-between">
+                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#a3a3a3]">
                     {isLive ? currentGP.status.replace("_", " ") : "Next Race"}
                   </span>
-                  {isLive && <span className="w-2 h-2 rounded-full bg-[#e10600] animate-pulse" />}
+                  {isLive && (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-[#e10600]">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#e10600] animate-pulse" />
+                      Live
+                    </span>
+                  )}
                 </div>
-                <h3 className="font-bold text-[#0a0a0a]">{currentGP.name}</h3>
-                <p className="text-[#a3a3a3] text-sm mt-0.5">{currentGP.circuit}</p>
-                {currentGP.hasSprint && <span className="f1-tag f1-tag-neutral mt-2">Sprint Weekend</span>}
-                <div className="flex gap-2 mt-4">
-                  <Link href={`/gp/${currentGP.slug}/qualifying`} className="f1-btn f1-btn-secondary text-xs rounded-lg py-2 px-3">Qualifying</Link>
-                  <Link href={`/gp/${currentGP.slug}/race`} className="f1-btn f1-btn-primary text-xs rounded-lg py-2 px-3">Race</Link>
+                <div className="p-5">
+                  <h3 className="text-lg font-bold uppercase tracking-tight text-[#0a0a0a]">
+                    {currentGP.name.replace(" Grand Prix", "")}
+                  </h3>
+                  <p className="text-[#a3a3a3] text-xs uppercase tracking-wider mt-0.5">{currentGP.circuit}</p>
+                  {currentGP.hasSprint && (
+                    <span className="inline-block mt-2 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 border border-[#e5e5e5] text-[#a3a3a3] rounded-sm">
+                      Sprint Weekend
+                    </span>
+                  )}
+                  <div className="flex gap-2 mt-4">
+                    <Link href={`/gp/${currentGP.slug}/qualifying`} className="px-4 py-2 text-[11px] font-bold uppercase tracking-[0.15em] border border-[#e5e5e5] text-[#525252] hover:text-[#0a0a0a] hover:border-[#d4d4d4] rounded-sm transition-colors">
+                      Qualifying
+                    </Link>
+                    <Link href={`/gp/${currentGP.slug}/race`} className="px-4 py-2 text-[11px] font-bold uppercase tracking-[0.15em] bg-[#0a0a0a] text-white rounded-sm hover:bg-[#262626] transition-colors">
+                      Race
+                    </Link>
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* Rival Battle */}
+            {/* Battle Zone */}
             {rivals.length > 0 && (
-              <div className="rounded-sm border border-[#e5e5e5] bg-white overflow-hidden">
-                <div className="px-6 pt-5 pb-3">
-                  <span className="text-xs font-semibold text-[#a3a3a3] uppercase tracking-wider">Battle Zone</span>
+              <div className="border border-[#e5e5e5] rounded-sm overflow-hidden">
+                <div className="bg-[#fafafa] px-5 py-3 border-b border-[#e5e5e5]">
+                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#a3a3a3]">Rival Battle</span>
                 </div>
                 {rivals.map((rival) => {
                   const ahead = rival.pointsDiff > 0;
                   const diff = Math.abs(rival.pointsDiff);
                   return (
-                    <div key={rival.id} className="px-6 pb-5">
-                      <div className="flex items-center gap-3">
+                    <div key={rival.id} className="p-5">
+                      <div className="flex items-center">
                         {/* You */}
-                        <div className="flex-1 text-right">
-                          <img
-                            src={profile.avatar_url || `https://github.com/${profile.github_username}.png`}
-                            alt={profile.github_username}
-                            className="w-10 h-10 rounded-full ml-auto border-2 border-[#0a0a0a]"
-                          />
-                          <p className="text-sm font-bold text-[#0a0a0a] mt-1.5 truncate">{profile.github_username}</p>
-                          <p className="text-xs font-mono text-[#525252]">{profile.total_points} pts</p>
+                        <div className="flex-1 flex items-center gap-3">
+                          <img src={profile.avatar_url || ""} alt="" className="w-10 h-10 rounded-full border-2 border-[#0a0a0a]" />
+                          <div>
+                            <p className="text-sm font-bold text-[#0a0a0a]">{profile.github_username}</p>
+                            <p className="text-xs text-[#a3a3a3] tabular-nums">{profile.total_points} pts</p>
+                          </div>
                         </div>
 
-                        {/* VS divider */}
-                        <div className="flex flex-col items-center px-3">
-                          <div className="w-px h-4 bg-[#e5e5e5]" />
-                          <span className="text-xs font-black text-[#0a0a0a] tracking-widest my-1">VS</span>
-                          <div className="w-px h-4 bg-[#e5e5e5]" />
-                          <span className={`text-[10px] font-bold mt-1 ${ahead ? "text-[#0a0a0a]" : "text-[#a3a3a3]"}`}>
+                        {/* Gap */}
+                        <div className="px-4 text-center">
+                          <p className={`text-lg font-black tabular-nums ${ahead ? "text-[#0a0a0a]" : "text-[#e10600]"}`}>
                             {ahead ? `+${diff}` : `-${diff}`}
-                          </span>
+                          </p>
+                          <p className="text-[8px] uppercase tracking-wider text-[#a3a3a3]">Gap</p>
                         </div>
 
                         {/* Rival */}
-                        <div className="flex-1">
-                          <img
-                            src={rival.avatar_url || `https://github.com/${rival.username}.png`}
-                            alt={rival.username}
-                            className="w-10 h-10 rounded-full border-2 border-[#d4d4d4]"
-                          />
-                          <p className="text-sm font-bold text-[#0a0a0a] mt-1.5 truncate">{rival.username}</p>
-                          <p className="text-xs font-mono text-[#525252]">{rival.points} pts</p>
+                        <div className="flex-1 flex items-center gap-3 justify-end text-right">
+                          <div>
+                            <p className="text-sm font-bold text-[#0a0a0a]">{rival.username}</p>
+                            <p className="text-xs text-[#a3a3a3] tabular-nums">{rival.points} pts</p>
+                          </div>
+                          <img src={rival.avatar_url || ""} alt="" className="w-10 h-10 rounded-full border-2 border-[#e5e5e5]" />
                         </div>
                       </div>
 
                       <Link
                         href={`/compare/${profile.github_username}/${rival.username}`}
-                        className="block text-center text-xs font-semibold text-[#525252] hover:text-[#0a0a0a] mt-4 py-2 rounded-lg border border-[#e5e5e5] hover:border-[#d4d4d4] transition-colors"
+                        className="block text-center mt-4 text-[10px] font-bold uppercase tracking-[0.15em] text-[#a3a3a3] hover:text-[#0a0a0a] transition-colors"
                       >
-                        Compare head-to-head
+                        Compare &rarr;
                       </Link>
                     </div>
                   );
@@ -205,114 +269,117 @@ export function DashboardClient({ profile, rivals, latestSnapshot, currentGP }: 
               </div>
             )}
 
-            {/* GitHub Profile Stats */}
-            {profile.github_stats && (profile.github_stats.total_stars !== undefined || profile.github_stats.total_repos !== undefined) && (
-              <div className="rounded-sm border border-[#e5e5e5] p-6 bg-white">
-                <h3 className="font-bold text-[#0a0a0a] mb-4">GitHub Profile</h3>
-                <div className="grid grid-cols-2 gap-4">
+            {/* Activity — This Week */}
+            {latestSnapshot && (
+              <div className="border border-[#e5e5e5] rounded-sm overflow-hidden">
+                <div className="bg-[#fafafa] px-5 py-3 border-b border-[#e5e5e5] flex items-center justify-between">
+                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#a3a3a3]">This Week</span>
+                  <span className="text-[9px] text-[#a3a3a3]">
+                    {new Date(latestSnapshot.synced_at).toISOString().replace("T", " ").slice(0, 16)} UTC
+                  </span>
+                </div>
+                <div className="grid grid-cols-5 gap-0 divide-x divide-[#f0f0f0]">
                   {[
-                    { label: "Stars", value: profile.github_stats.total_stars ?? 0, icon: "\u{2B50}" },
-                    { label: "Repos", value: profile.github_stats.total_repos ?? 0, icon: "\u{1F4E6}" },
-                    { label: "Followers", value: profile.github_stats.followers ?? 0, icon: "\u{1F465}" },
-                    { label: "Following", value: profile.github_stats.following ?? 0, icon: "\u{1F464}" },
+                    { label: "Commits", value: latestSnapshot.commits_count },
+                    { label: "PRs", value: latestSnapshot.prs_merged },
+                    { label: "Reviews", value: latestSnapshot.prs_reviewed },
+                    { label: "Issues", value: latestSnapshot.issues_opened + latestSnapshot.issues_closed },
+                    { label: "PRs Open", value: latestSnapshot.prs_opened },
                   ].map((stat) => (
-                    <div key={stat.label} className="flex items-center gap-2">
-                      <span className="text-sm">{stat.icon}</span>
+                    <div key={stat.label} className="text-center py-4 px-2">
+                      <p className="text-xl font-black text-[#0a0a0a] tabular-nums">{stat.value}</p>
+                      <p className="text-[9px] uppercase tracking-wider text-[#a3a3a3] mt-0.5">{stat.label}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Onboarding */}
+            {!latestSnapshot && (
+              <div className="border border-[#e5e5e5] rounded-sm p-6">
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#e10600] mb-4">Get Started</p>
+                <div className="space-y-4">
+                  {[
+                    { step: 1, title: "Sync your GitHub activity", desc: "We'll read your contributions to build car stats.", active: true },
+                    { step: 2, title: "Qualify for the race (Mon–Fri)", desc: "Your contributions determine your grid position.", active: false },
+                    { step: 3, title: "Race on the weekend", desc: "Simulation runs on Sunday with F1 points.", active: false },
+                  ].map((s) => (
+                    <div key={s.step} className={`flex items-start gap-3 ${s.active ? "" : "opacity-40"}`}>
+                      <span className={`w-6 h-6 rounded-sm text-xs font-black flex items-center justify-center shrink-0 ${s.active ? "bg-[#0a0a0a] text-white" : "bg-[#f0f0f0] text-[#a3a3a3]"}`}>
+                        {s.step}
+                      </span>
                       <div>
-                        <p className="text-lg font-black text-[#0a0a0a] leading-none">{stat.value.toLocaleString()}</p>
-                        <p className="text-[#a3a3a3] text-xs">{stat.label}</p>
+                        <p className="text-sm font-bold text-[#0a0a0a]">{s.title}</p>
+                        <p className="text-xs text-[#a3a3a3] mt-0.5">{s.desc}</p>
+                        {s.active && (
+                          <button onClick={handleSync} disabled={syncing} className="mt-2 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.15em] bg-[#0a0a0a] text-white rounded-sm hover:bg-[#262626] transition-colors disabled:opacity-30">
+                            {syncing ? "Syncing..." : "Sync Now"}
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}
                 </div>
-                {profile.github_stats.top_languages && profile.github_stats.top_languages.length > 0 && (
-                  <div className="mt-4 pt-3 border-t border-[#f0f0f0]">
-                    <p className="text-[#a3a3a3] text-xs mb-2">Top Languages</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {profile.github_stats.top_languages.map((lang: string) => (
-                        <span key={lang} className="text-xs px-2 py-0.5 rounded bg-[#f5f5f5] text-[#525252] font-medium">
-                          {lang}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
             )}
+          </div>
 
-            {/* Activity */}
-            {latestSnapshot && (
-              <div className="rounded-sm border border-[#e5e5e5] p-6 bg-white">
-                <h3 className="font-bold text-[#0a0a0a] mb-4">This Week</h3>
-                <div className="grid grid-cols-3 gap-4">
+          {/* Right sidebar */}
+          <div className="space-y-6">
+            {/* GitHub Stats */}
+            {profile.github_stats && (profile.github_stats.total_stars !== undefined) && (
+              <div className="border border-[#e5e5e5] rounded-sm overflow-hidden">
+                <div className="bg-[#fafafa] px-5 py-3 border-b border-[#e5e5e5]">
+                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#a3a3a3]">GitHub</span>
+                </div>
+                <div className="p-5 space-y-3">
                   {[
-                    { label: "Commits", value: latestSnapshot.commits_count },
-                    { label: "PRs Merged", value: latestSnapshot.prs_merged },
-                    { label: "Reviews", value: latestSnapshot.prs_reviewed },
+                    { label: "Stars", value: profile.github_stats.total_stars ?? 0 },
+                    { label: "Repositories", value: profile.github_stats.total_repos ?? 0 },
+                    { label: "Followers", value: profile.github_stats.followers ?? 0 },
                   ].map((stat) => (
-                    <div key={stat.label} className="text-center">
-                      <p className="text-2xl font-black text-[#0a0a0a]">{stat.value}</p>
-                      <p className="text-[#a3a3a3] text-xs">{stat.label}</p>
+                    <div key={stat.label} className="flex items-center justify-between">
+                      <span className="text-xs text-[#a3a3a3]">{stat.label}</span>
+                      <span className="text-sm font-black text-[#0a0a0a] tabular-nums">{stat.value.toLocaleString()}</span>
                     </div>
                   ))}
-                </div>
-                <p className="text-[#a3a3a3] text-xs mt-4 pt-4 border-t border-[#f0f0f0]">
-                  Synced {new Date(latestSnapshot.synced_at).toISOString().replace("T", " ").slice(0, 16)} UTC
-                </p>
-              </div>
-            )}
-
-            {!latestSnapshot && (
-              <div className="rounded-sm border border-[#e5e5e5] p-6 bg-white">
-                <h3 className="font-bold text-[#0a0a0a] mb-4">Get Started</h3>
-                <div className="space-y-3">
-                  <div className="flex items-start gap-3">
-                    <span className="w-6 h-6 rounded-full bg-[#0a0a0a] text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">1</span>
-                    <div className="flex-1">
-                      <p className="text-[#0a0a0a] text-sm font-semibold">Sync your GitHub activity</p>
-                      <p className="text-[#a3a3a3] text-xs mt-0.5">We'll read your contributions from this week to build your car stats.</p>
-                      <button
-                        onClick={handleSync}
-                        disabled={syncing}
-                        className="f1-btn f1-btn-primary rounded-lg text-xs mt-2 py-2 px-4"
-                      >
-                        {syncing ? "Syncing..." : "Sync Now"}
-                      </button>
+                  {profile.github_stats.top_languages && profile.github_stats.top_languages.length > 0 && (
+                    <div className="pt-3 border-t border-[#f0f0f0]">
+                      <div className="flex flex-wrap gap-1">
+                        {profile.github_stats.top_languages.map((lang: string) => (
+                          <span key={lang} className="text-[10px] px-2 py-0.5 bg-[#f5f5f5] text-[#525252] font-semibold rounded-sm">
+                            {lang}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-start gap-3 opacity-50">
-                    <span className="w-6 h-6 rounded-full bg-[#e5e5e5] text-[#525252] text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">2</span>
-                    <div>
-                      <p className="text-[#0a0a0a] text-sm font-semibold">Qualify for the race (Mon–Fri)</p>
-                      <p className="text-[#a3a3a3] text-xs mt-0.5">Your contributions during the week determine your grid position.</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3 opacity-50">
-                    <span className="w-6 h-6 rounded-full bg-[#e5e5e5] text-[#525252] text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">3</span>
-                    <div>
-                      <p className="text-[#0a0a0a] text-sm font-semibold">Race on the weekend</p>
-                      <p className="text-[#a3a3a3] text-xs mt-0.5">Race simulation runs on Sunday with overtakes, pit stops, and F1 points.</p>
-                    </div>
-                  </div>
+                  )}
                 </div>
               </div>
             )}
 
-            {/* Links */}
-            <div className="flex gap-3">
+            {/* Quick Links */}
+            <div className="space-y-2">
               {[
-                { label: "Profile", href: `/driver/${profile.github_username}` },
-                { label: "Standings", href: "/leaderboard" },
-                { label: "Achievements", href: "/achievements" },
+                { label: "My Profile", href: `/driver/${profile.github_username}`, icon: "\u{2192}" },
+                { label: "Standings", href: "/leaderboard", icon: "\u{2192}" },
+                { label: "Achievements", href: "/achievements", icon: "\u{2192}" },
+                { label: "Calendar", href: "/calendar", icon: "\u{2192}" },
               ].map((link) => (
-                <Link key={link.label} href={link.href} className="flex-1 text-center text-sm py-2.5 rounded-lg border border-[#e5e5e5] text-[#525252] hover:text-[#0a0a0a] hover:border-[#d4d4d4] transition-colors font-medium">
-                  {link.label}
+                <Link
+                  key={link.label}
+                  href={link.href}
+                  className="flex items-center justify-between px-4 py-3 border border-[#e5e5e5] rounded-sm hover:border-[#d4d4d4] hover:bg-[#fafafa] transition-colors group"
+                >
+                  <span className="text-sm font-bold text-[#0a0a0a]">{link.label}</span>
+                  <span className="text-[#d4d4d4] group-hover:text-[#0a0a0a] transition-colors text-sm">{link.icon}</span>
                 </Link>
               ))}
             </div>
           </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 }
