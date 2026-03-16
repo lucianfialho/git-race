@@ -94,7 +94,16 @@ export async function POST() {
     // Fetch GitHub profile stats (stars, repos, followers) in parallel
     const profileStats = await syncProfileStats(profile);
 
-    // Update car_stats + github_stats on profile
+    // Calculate overall rating as base points (before race results add more)
+    const overallRating = Math.round(
+      (data.power_unit_score * 0.25 +
+       data.aero_score * 0.25 +
+       data.reliability_score * 0.2 +
+       data.tire_mgmt_score * 0.15 +
+       data.strategy_score * 0.15) * 2
+    );
+
+    // Update car_stats + github_stats + points on profile
     const profileUpdate: Record<string, unknown> = {
       car_stats: {
         power_unit: data.power_unit_score,
@@ -103,6 +112,7 @@ export async function POST() {
         tire_mgmt: data.tire_mgmt_score,
         strategy: data.strategy_score,
       },
+      total_points: overallRating,
     };
     if (profileStats) {
       profileUpdate.github_stats = profileStats;
