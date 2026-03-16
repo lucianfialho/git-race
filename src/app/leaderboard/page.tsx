@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { LeaderboardTabs } from "./leaderboard-tabs";
+import { getDivisionFromPoints } from "@/lib/race/divisions";
 
 export const metadata = {
   title: "Standings - GitRace",
@@ -41,6 +42,8 @@ export default async function LeaderboardPage() {
         points: e.points_earned || 0,
       }));
 
+    const div = getDivisionFromPoints(profile.total_points || 0);
+
     return {
       profileId: profile.id,
       username: profile.github_username,
@@ -50,6 +53,8 @@ export default async function LeaderboardPage() {
       position: i + 1,
       wins: results.filter((r) => r.position === 1).length,
       podiums: results.filter((r) => r.position <= 3).length,
+      divisionName: div.name,
+      divisionLevel: div.level,
     };
   });
 

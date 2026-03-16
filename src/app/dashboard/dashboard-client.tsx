@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { CarStats } from "@/lib/race/car-components";
 import { calculateOverallRating } from "@/lib/race/car-components";
+import { DIVISION_CONFIG, getNextDivisionThreshold, getCurrentDivisionThreshold } from "@/lib/race/divisions";
 
 interface RivalData {
   id: string;
@@ -33,6 +34,9 @@ interface DashboardClientProps {
     } | null;
     division: string;
     divisionLevel: number;
+    positionInDivision: number;
+    totalInDivision: number;
+    zone: "promotion" | "relegation" | null;
   };
   rivals: RivalData[];
   latestSnapshot: {
@@ -155,6 +159,16 @@ export function DashboardClient({ profile, rivals, latestSnapshot, currentGP }: 
           {syncMessage && <p className="text-white/40 text-xs mt-2">{syncMessage}</p>}
         </div>
       </section>
+
+      {/* ─── Division Progress ─── */}
+      <DivisionProgress
+        divisionLevel={profile.divisionLevel}
+        divisionName={profile.division}
+        totalPoints={profile.total_points}
+        positionInDivision={profile.positionInDivision}
+        totalInDivision={profile.totalInDivision}
+        zone={profile.zone}
+      />
 
       {/* ─── Car Telemetry: 5 components as horizontal gauges ─── */}
       <section className="border-b border-[#e5e5e5]">
@@ -381,5 +395,101 @@ export function DashboardClient({ profile, rivals, latestSnapshot, currentGP }: 
         </div>
       </section>
     </div>
+  );
+}
+
+/* ─── Division Progress Sub-component ─── */
+function DivisionProgress({
+  divisionLevel,
+  divisionName,
+  totalPoints,
+  positionInDivision,
+  totalInDivision,
+  zone,
+}: {
+  divisionLevel: number;
+  divisionName: string;
+  totalPoints: number;
+  positionInDivision: number;
+  totalInDivision: number;
+  zone: "promotion" | "relegation" | null;
+}) {
+  const nextThreshold = getNextDivisionThreshold(divisionLevel);
+  const currentThreshold = getCurrentDivisionThreshold(divisionLevel);
+  const nextConfig = DIVISION_CONFIG.find((d) => d.level === divisionLevel + 1);
+  const divColor = DIV_COLORS[divisionLevel] ?? "#a3a3a3";
+
+  // Progress within current division toward next
+  let progressPct = 100;
+  let pointsToNext = 0;
+  if (nextThreshold !== null) {
+    const range = nextThreshold - currentThreshold;
+    const progress = totalPoints - currentThreshold;
+    progressPct = Math.min(100, Math.max(0, (progress / range) * 100));
+    pointsToNext = Math.max(0, nextThreshold - totalPoints);
+  }
+
+  return (
+    <section className="border-b border-[#e5e5e5]">
+      <div className="max-w-4xl mx-auto px-4 md:px-8 py-5">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          {/* Division label + position */}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span
+                className="text-[11px] font-bold uppercase tracking-[0.15em] px-2.5 py-1 rounded-sm"
+                style={{ background: divColor, color: divisionLevel === 1 ? "#0a0a0a" : "#fff" }}
+              >
+                Division {divisionName}
+              </span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#a3a3a3]">
+                P{positionInDivision} / {totalInDivision}
+              </span>
+            </div>
+
+            {/* Zone badge */}
+            {zone === "promotion" && (
+              <span className="text-[9px] font-bold uppercase tracking-[0.15em] px-2 py-0.5 rounded-sm bg-green-500 text-white">
+                Promotion Zone
+              </span>
+            )}
+            {zone === "relegation" && (
+              <span className="text-[9px] font-bold uppercase tracking-[0.15em] px-2 py-0.5 rounded-sm bg-[#e10600] text-white">
+                Relegation Zone
+              </span>
+            )}
+          </div>
+
+          {/* Progress toward next division */}
+          {nextThreshold !== null && nextConfig && (
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="hidden sm:flex items-center gap-2 min-w-0">
+                <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#a3a3a3] whitespace-nowrap">
+                  {nextConfig.name}
+                </span>
+                <div className="w-32 md:w-48 h-1.5 bg-[#f0f0f0] rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-700"
+                    style={{
+                      width: `${progressPct}%`,
+                      background: nextConfig.gridColor,
+                    }}
+                  />
+                </div>
+              </div>
+              <span className="text-[10px] font-bold tabular-nums text-[#525252] whitespace-nowrap">
+                {pointsToNext} pts to go
+              </span>
+            </div>
+          )}
+
+          {nextThreshold === null && (
+            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#a3a3a3]">
+              Top Division
+            </span>
+          )}
+        </div>
+      </div>
+    </section>
   );
 }

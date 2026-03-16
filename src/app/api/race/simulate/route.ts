@@ -7,6 +7,7 @@ import { simulateRace, type RaceDriver, type RaceConfig } from "@/lib/race/simul
 import { fillGridWithBots } from "@/lib/race/matchmaking";
 import { checkAndAwardAchievements } from "@/lib/race/achievements";
 import { saveSnapshot, type QualifyingSnapshot, type RaceDataSnapshot } from "@/lib/race/snapshots";
+import { getDivisionFromPoints } from "@/lib/race/divisions";
 
 /**
  * POST /api/race/simulate
@@ -97,6 +98,20 @@ export async function POST() {
           .update({ total_points: (profile.total_points || 0) + dr.points })
           .eq("id", profile.id);
       }
+    }
+  }
+
+  // Update division_level based on new points totals
+  for (const dr of raceResult.results) {
+    if (dr.isBot) continue;
+    const profile = profiles.find((p) => p.id === dr.profileId);
+    if (profile) {
+      const newTotal = (profile.total_points || 0) + (dr.points > 0 ? dr.points : 0);
+      const newDiv = getDivisionFromPoints(newTotal);
+      await admin
+        .from("profiles")
+        .update({ division_level: newDiv.level })
+        .eq("id", profile.id);
     }
   }
 

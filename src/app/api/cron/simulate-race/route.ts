@@ -4,6 +4,7 @@ import { getMostRelevantGP, getGPStatus, getNow } from "@/lib/f1/calendar";
 import { simulateRace, type RaceDriver, type RaceConfig } from "@/lib/race/simulation";
 import { fillGridWithBots } from "@/lib/race/matchmaking";
 import { saveSnapshot, loadSnapshotAdmin, type RaceDataSnapshot } from "@/lib/race/snapshots";
+import { getDivisionFromPoints } from "@/lib/race/divisions";
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
@@ -118,6 +119,20 @@ export async function GET(request: Request) {
             .update({ total_points: (profile.total_points || 0) + driverResult.points })
             .eq("id", profile.id);
         }
+      }
+    }
+
+    // Update division_level based on new points totals
+    for (const driverResult of result.results) {
+      if (driverResult.isBot) continue;
+      const profile = profiles.find((p) => p.id === driverResult.profileId);
+      if (profile) {
+        const newTotal = (profile.total_points || 0) + (driverResult.points > 0 ? driverResult.points : 0);
+        const newDiv = getDivisionFromPoints(newTotal);
+        await admin
+          .from("profiles")
+          .update({ division_level: newDiv.level })
+          .eq("id", profile.id);
       }
     }
 

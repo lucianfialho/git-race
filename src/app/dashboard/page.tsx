@@ -4,7 +4,7 @@ import { DashboardClient } from "./dashboard-client";
 import { getCurrentGP, getNextGP, getGPStatus, getNow } from "@/lib/f1/calendar";
 import { detectRivals } from "@/lib/race/rivalries";
 import type { StandingEntry } from "@/lib/race/rivalries";
-import { getDivisionFromPoints } from "@/lib/race/divisions";
+import { getDivisionFromPoints, getDriverZone } from "@/lib/race/divisions";
 
 export const metadata = {
   title: "Dashboard - GitRace Manager",
@@ -83,6 +83,14 @@ export default async function DashboardPage() {
   // Division from points
   const division = getDivisionFromPoints(profile.total_points ?? 0);
 
+  // Compute position within division for zone detection
+  const driversInSameDivision = (allProfiles ?? [])
+    .filter((p) => getDivisionFromPoints(p.total_points ?? 0).level === division.level)
+    .sort((a, b) => (b.total_points ?? 0) - (a.total_points ?? 0));
+  const positionInDivision = driversInSameDivision.findIndex((p) => p.id === profile.id) + 1;
+  const totalInDivision = driversInSameDivision.length;
+  const zone = getDriverZone(positionInDivision, totalInDivision, division.level);
+
   // Parse car_stats safely
   const carStats = profile.car_stats ?? {
     power_unit: 0,
@@ -105,6 +113,9 @@ export default async function DashboardPage() {
         github_stats: profile.github_stats ?? null,
         division: division.name,
         divisionLevel: division.level,
+        positionInDivision,
+        totalInDivision,
+        zone,
       }}
       rivals={rivals}
       latestSnapshot={latestSnapshot}
