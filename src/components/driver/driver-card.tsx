@@ -55,7 +55,7 @@ export function DriverCard({
   }
 
   return (
-    <div className="rounded-xl border border-[#e5e5e5] p-6 bg-white">
+    <div className="rounded-sm border border-[#e5e5e5] p-6 bg-white">
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div className="flex items-center gap-4">

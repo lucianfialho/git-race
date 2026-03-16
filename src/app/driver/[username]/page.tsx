@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { DriverCard } from "@/components/driver/driver-card";
 import { CompareLink } from "@/components/driver/compare-link";
@@ -73,7 +74,7 @@ export default async function DriverPage({ params }: { params: Promise<{ usernam
 
         <div className="mt-8">
           <h3 className="font-bold text-[#0a0a0a] mb-4">Race History</h3>
-          <div className="rounded-xl border border-[#e5e5e5] overflow-hidden">
+          <div className="rounded-sm border border-[#e5e5e5] overflow-hidden">
             {results.length > 0 ? (
               <table className="w-full">
                 <thead>
@@ -86,10 +87,14 @@ export default async function DriverPage({ params }: { params: Promise<{ usernam
                 </thead>
                 <tbody>
                   {results.map((entry) => {
-                    const race = entry.races as unknown as { name: string };
+                    const race = entry.races as unknown as { name: string; slug: string };
                     return (
                       <tr key={entry.id} className="border-b border-[#f5f5f5] last:border-0 hover:bg-[#fafafa]">
-                        <td className="py-3 px-4 text-[#0a0a0a] text-sm font-medium">{race?.name}</td>
+                        <td className="py-3 px-4 text-sm font-medium">
+                          <Link href={`/gp/${race?.slug ?? "#"}/result/${profile.github_username}`} className="text-[#0a0a0a] hover:text-[#e10600] transition-colors">
+                            {race?.name}
+                          </Link>
+                        </td>
                         <td className="py-3 px-4 text-right text-[#a3a3a3] text-sm">P{entry.grid_position}</td>
                         <td className="py-3 px-4 text-right text-sm">
                           {entry.dnf ? (

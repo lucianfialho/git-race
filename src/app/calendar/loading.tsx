@@ -9,7 +9,7 @@ export default function CalendarLoading() {
           {Array.from({ length: 12 }).map((_, i) => (
             <div
               key={i}
-              className="flex items-center gap-4 p-4 rounded-xl border border-[#e5e5e5]"
+              className="flex items-center gap-4 p-4 rounded-sm border border-[#e5e5e5]"
             >
               <div className="h-4 w-6 bg-[#f0f0f0] animate-pulse rounded-sm" />
               <div className="w-7 h-7 bg-[#f0f0f0] animate-pulse rounded-sm" />

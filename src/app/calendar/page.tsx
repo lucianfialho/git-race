@@ -41,7 +41,7 @@ export default function CalendarPage() {
               <Link
                 key={gp.slug}
                 href={href}
-                className={`flex items-center gap-4 p-4 rounded-xl border transition-colors ${
+                className={`flex items-center gap-4 p-4 rounded-sm border transition-colors ${
                   isActive ? "border-[#0a0a0a] bg-[#fafafa]" : "border-[#e5e5e5] hover:border-[#d4d4d4]"
                 }`}
               >

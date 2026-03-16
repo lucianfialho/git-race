@@ -193,7 +193,7 @@ export default async function ComparePage({
         </div>
 
         {/* Overall Rating */}
-        <div className="rounded-xl border border-[#e5e5e5] p-6 mb-4">
+        <div className="rounded-sm border border-[#e5e5e5] p-6 mb-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[#a3a3a3] text-xs uppercase tracking-wider">
               Overall Rating
@@ -215,7 +215,7 @@ export default async function ComparePage({
         </div>
 
         {/* Total Points */}
-        <div className="rounded-xl border border-[#e5e5e5] p-6 mb-4">
+        <div className="rounded-sm border border-[#e5e5e5] p-6 mb-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[#a3a3a3] text-xs uppercase tracking-wider">
               Championship Points
@@ -237,7 +237,7 @@ export default async function ComparePage({
         </div>
 
         {/* Car Stats - Mirrored Bars */}
-        <div className="rounded-xl border border-[#e5e5e5] p-6 mb-4">
+        <div className="rounded-sm border border-[#e5e5e5] p-6 mb-4">
           <h3 className="text-[#a3a3a3] text-xs uppercase tracking-wider mb-5">
             Car Development
           </h3>
@@ -288,7 +288,7 @@ export default async function ComparePage({
         </div>
 
         {/* GitHub Stats */}
-        <div className="rounded-xl border border-[#e5e5e5] p-6 mb-4">
+        <div className="rounded-sm border border-[#e5e5e5] p-6 mb-4">
           <h3 className="text-[#a3a3a3] text-xs uppercase tracking-wider mb-5">
             GitHub Stats
           </h3>
@@ -334,7 +334,7 @@ export default async function ComparePage({
         </div>
 
         {/* Winner Banner */}
-        <div className="rounded-xl border-2 border-[#e10600] p-6 text-center">
+        <div className="rounded-sm border-2 border-[#e10600] p-6 text-center">
           <p className="text-[#a3a3a3] text-xs uppercase tracking-wider mb-2">
             Verdict
           </p>

@@ -20,7 +20,7 @@ export function CarStatsDisplay({ stats, previousStats }: CarStatsDisplayProps) 
   const overallDelta = prevOverall !== null ? Math.round((overall - prevOverall) * 10) / 10 : null;
 
   return (
-    <div className="rounded-xl border border-[#e5e5e5] p-6 bg-white">
+    <div className="rounded-sm border border-[#e5e5e5] p-6 bg-white">
       <div className="flex items-center justify-between mb-6">
         <h3 className="font-bold text-[#0a0a0a]">Car Development</h3>
         <div className="flex items-baseline gap-1.5">

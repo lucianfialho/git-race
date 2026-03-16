@@ -169,6 +169,15 @@ export default async function QualifyingPage({ params }: { params: Promise<{ slu
           </div>
         )}
 
+        {/* Zone legend */}
+        {qualiResults.length > 0 && (
+          <div className="flex items-center gap-4 mt-3 text-[10px] font-semibold uppercase tracking-wider text-[#a3a3a3]">
+            <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-white border border-[#e5e5e5]" /> P1–10 Advanced to Q3</div>
+            <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-[#fafafa] border border-[#e5e5e5]" /> P11–15 Out in Q2</div>
+            <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-[#f5f5f5] border border-[#e5e5e5]" /> P16–20 Out in Q1</div>
+          </div>
+        )}
+
         {qualiResults.length === 0 && (status === "qualifying" || status === "finished" || status === "race_day") && (
           <div className="text-center p-8 rounded-sm border border-[#e5e5e5]">
             <p className="text-[#a3a3a3]">No drivers synced yet. Sign in and sync your GitHub to join.</p>

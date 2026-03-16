@@ -131,7 +131,7 @@ export function DashboardClient({ profile, rivals, latestSnapshot, currentGP }: 
           <div className="space-y-6">
             {/* GP Card */}
             {currentGP && (
-              <div className="rounded-xl border border-[#e5e5e5] p-6 bg-white">
+              <div className="rounded-sm border border-[#e5e5e5] p-6 bg-white">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-xs font-semibold text-[#a3a3a3] uppercase tracking-wider">
                     {isLive ? currentGP.status.replace("_", " ") : "Next Race"}
@@ -150,7 +150,7 @@ export function DashboardClient({ profile, rivals, latestSnapshot, currentGP }: 
 
             {/* Rival Battle */}
             {rivals.length > 0 && (
-              <div className="rounded-xl border border-[#e5e5e5] bg-white overflow-hidden">
+              <div className="rounded-sm border border-[#e5e5e5] bg-white overflow-hidden">
                 <div className="px-6 pt-5 pb-3">
                   <span className="text-xs font-semibold text-[#a3a3a3] uppercase tracking-wider">Battle Zone</span>
                 </div>
@@ -207,7 +207,7 @@ export function DashboardClient({ profile, rivals, latestSnapshot, currentGP }: 
 
             {/* GitHub Profile Stats */}
             {profile.github_stats && (profile.github_stats.total_stars !== undefined || profile.github_stats.total_repos !== undefined) && (
-              <div className="rounded-xl border border-[#e5e5e5] p-6 bg-white">
+              <div className="rounded-sm border border-[#e5e5e5] p-6 bg-white">
                 <h3 className="font-bold text-[#0a0a0a] mb-4">GitHub Profile</h3>
                 <div className="grid grid-cols-2 gap-4">
                   {[
@@ -242,7 +242,7 @@ export function DashboardClient({ profile, rivals, latestSnapshot, currentGP }: 
 
             {/* Activity */}
             {latestSnapshot && (
-              <div className="rounded-xl border border-[#e5e5e5] p-6 bg-white">
+              <div className="rounded-sm border border-[#e5e5e5] p-6 bg-white">
                 <h3 className="font-bold text-[#0a0a0a] mb-4">This Week</h3>
                 <div className="grid grid-cols-3 gap-4">
                   {[
@@ -263,7 +263,7 @@ export function DashboardClient({ profile, rivals, latestSnapshot, currentGP }: 
             )}
 
             {!latestSnapshot && (
-              <div className="rounded-xl border border-[#e5e5e5] p-6 bg-white">
+              <div className="rounded-sm border border-[#e5e5e5] p-6 bg-white">
                 <h3 className="font-bold text-[#0a0a0a] mb-4">Get Started</h3>
                 <div className="space-y-3">
                   <div className="flex items-start gap-3">

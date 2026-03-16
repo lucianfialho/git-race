@@ -99,10 +99,10 @@ export default async function AchievementsPage() {
                     className={`flex items-center gap-3 p-4 rounded-sm border transition-colors ${
                       isUnlocked
                         ? "border-[#0a0a0a] bg-[#fafafa]"
-                        : "border-[#e5e5e5] opacity-40"
+                        : "border-[#e5e5e5]"
                     }`}
                   >
-                    <span className="text-2xl">{a.icon}</span>
+                    <span className={`text-2xl ${isUnlocked ? "" : "grayscale opacity-40"}`}>{a.icon}</span>
                     <div className="flex-1">
                       <p className="text-[#0a0a0a] text-sm font-bold">{a.name}</p>
                       <p className="text-[#a3a3a3] text-xs">{a.description}</p>
