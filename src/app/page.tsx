@@ -52,28 +52,82 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* GP Hero — dark, immersive, themed per GP */}
+      {/* ─── MAIN HERO — Full viewport, aggressive CTA ─── */}
+      <section className="relative bg-[#0a0a0a] text-white overflow-hidden">
+        {/* Red accent bar */}
+        <div className="h-1 bg-[#e10600]" />
+
+        {/* Subtle diagonal lines texture */}
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{
+          backgroundImage: "repeating-linear-gradient(45deg, transparent, transparent 40px, white 40px, white 41px)",
+        }} />
+
+        <div className="max-w-5xl mx-auto px-4 md:px-8 py-24 md:py-36 relative">
+          {/* Overline */}
+          <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#e10600] mb-6">
+            Where GitHub meets Formula 1
+          </p>
+
+          {/* Main headline */}
+          <h1 className="text-5xl sm:text-6xl md:text-8xl lg:text-9xl font-black uppercase tracking-tighter leading-[0.85]">
+            Your Code.<br/>
+            <span className="text-white/20">Your Race.</span>
+          </h1>
+
+          {/* Subline */}
+          <p className="text-white/40 text-lg md:text-xl mt-8 max-w-xl leading-relaxed">
+            Commits power your engine. Pull requests shape your aero. Code reviews grip your tires.
+            Compete against {driverCount && driverCount > 0 ? `${driverCount}+` : ""} developers in a real F1 championship.
+          </p>
+
+          {/* CTA cluster */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mt-10">
+            <Link
+              href="/login"
+              className="px-8 py-4 bg-[#e10600] hover:bg-[#ff1801] text-white text-base font-black uppercase tracking-wider rounded-sm transition-colors"
+            >
+              Start Racing Now
+            </Link>
+            <Link
+              href="/leaderboard"
+              className="px-8 py-4 border-2 border-white/20 text-white/60 hover:text-white hover:border-white/40 text-base font-bold uppercase tracking-wider rounded-sm transition-colors"
+            >
+              View Standings
+            </Link>
+          </div>
+
+          {/* Social proof */}
+          {topDrivers && topDrivers.length >= 3 && (
+            <div className="flex items-center gap-4 mt-12">
+              <div className="flex -space-x-3">
+                {topDrivers.slice(0, 5).map((d) => (
+                  <img
+                    key={d.github_username}
+                    src={d.avatar_url || `https://github.com/${d.github_username}.png`}
+                    alt=""
+                    className="w-10 h-10 rounded-full border-2 border-[#0a0a0a]"
+                  />
+                ))}
+              </div>
+              <div>
+                <p className="text-white/50 text-sm">
+                  Racing against <span className="text-white font-bold">{topDrivers[0].github_username}</span>, <span className="text-white font-bold">{topDrivers[1].github_username}</span>, and others
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Scroll indicator */}
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-white/20">
+            <span className="text-[9px] font-bold uppercase tracking-[0.3em]">Scroll</span>
+            <div className="w-px h-8 bg-white/20 animate-pulse" />
+          </div>
+        </div>
+      </section>
+
+      {/* ─── GP Hero — themed per current/next race (second fold) ─── */}
       {nextGP && gpStatus && (
         <GPHero gp={nextGP} status={gpStatus} />
-      )}
-
-      {/* Fallback hero when no GP */}
-      {!nextGP && (
-        <section className="bg-[#0a0a0a] text-white">
-          <div className="max-w-5xl mx-auto px-4 md:px-8 py-20 md:py-28">
-            <h1 className="text-5xl md:text-7xl font-bold uppercase tracking-tight leading-[0.95]">
-              Your GitHub.<br/>
-              <span className="text-white/30">Your Race.</span>
-            </h1>
-            <p className="text-white/50 text-lg mt-6 max-w-lg">
-              Commits power your engine. PRs shape your aero. Reviews grip your tires.
-            </p>
-            <div className="flex gap-3 mt-8">
-              <Link href="/login" className="f1-btn f1-btn-accent rounded-sm">Start Racing</Link>
-              <Link href="/calendar" className="px-5 py-2.5 text-sm font-bold uppercase tracking-wider border border-white/20 text-white/70 hover:text-white hover:border-white/40 rounded-sm transition-colors">Calendar</Link>
-            </div>
-          </div>
-        </section>
       )}
 
       {/* How it works */}
