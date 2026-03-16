@@ -1,6 +1,5 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { StandingsTable } from "@/components/leaderboard/standings-table";
-import { Podium } from "@/components/leaderboard/podium";
 
 export const metadata = {
   title: "Standings - GitRace",
@@ -10,20 +9,17 @@ export const metadata = {
 export default async function LeaderboardPage() {
   const supabase = await createClient();
 
-  // Get active season
   const { data: season } = await supabase
     .from("seasons")
     .select("*")
     .eq("is_active", true)
     .single();
 
-  // Get all profiles ordered by points
   const { data: profiles } = await supabase
     .from("profiles")
     .select("*")
     .order("total_points", { ascending: false });
 
-  // Get race entries for race results
   const raceEntries = season
     ? (
         await supabase
@@ -34,7 +30,6 @@ export default async function LeaderboardPage() {
       ).data
     : [];
 
-  // Build standings
   const entries = (profiles || []).map((profile, i) => {
     const results = (raceEntries || [])
       .filter((e) => e.profile_id === profile.id)
@@ -47,78 +42,101 @@ export default async function LeaderboardPage() {
       profileId: profile.id,
       username: profile.github_username,
       avatarUrl: profile.avatar_url || "",
-      carColor: profile.car_color || "#ff0000",
       carNumber: profile.car_number || 0,
       totalPoints: profile.total_points || 0,
       position: i + 1,
-      raceResults: results,
+      wins: results.filter((r) => r.position === 1).length,
+      podiums: results.filter((r) => r.position <= 3).length,
     };
   });
 
   const top3 = entries.slice(0, 3);
 
   return (
-    <div className="min-h-screen bg-neutral-950">
-      <nav className="flex items-center justify-between px-6 py-3 border-b border-neutral-800">
-        <a href="/" className="text-white font-bold text-lg">
-          GitRace
-        </a>
-        <div className="flex items-center gap-4">
-          <a
-            href="/race"
-            className="text-neutral-400 text-sm hover:text-white transition-colors"
-          >
-            Race
-          </a>
-          <a
-            href="/dashboard"
-            className="text-neutral-400 text-sm hover:text-white transition-colors"
-          >
-            Dashboard
-          </a>
-        </div>
-      </nav>
-
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <h1 className="text-white text-3xl font-bold mb-2">
+    <div className="min-h-screen bg-white">
+      <div className="max-w-3xl mx-auto px-4 py-8">
+        <h1 className="f1-heading text-3xl text-[#0a0a0a] mb-1">
           {season?.name || "Season"} Standings
         </h1>
-        <p className="text-neutral-400 mb-8">
-          Championship standings based on weekly race results
+        <p className="text-[#a3a3a3] text-sm mb-8">
+          Championship standings based on race results
         </p>
 
+        {/* Podium */}
         {top3.length >= 3 && (
-          <Podium
-            first={{
-              username: top3[0].username,
-              avatarUrl: top3[0].avatarUrl,
-              carColor: top3[0].carColor,
-              totalPoints: top3[0].totalPoints,
-            }}
-            second={{
-              username: top3[1].username,
-              avatarUrl: top3[1].avatarUrl,
-              carColor: top3[1].carColor,
-              totalPoints: top3[1].totalPoints,
-            }}
-            third={{
-              username: top3[2].username,
-              avatarUrl: top3[2].avatarUrl,
-              carColor: top3[2].carColor,
-              totalPoints: top3[2].totalPoints,
-            }}
-          />
+          <div className="flex items-end justify-center gap-6 mb-10 pt-4">
+            {[
+              { entry: top3[1], pos: "P2", h: "h-24", order: 1 },
+              { entry: top3[0], pos: "P1", h: "h-32", order: 2 },
+              { entry: top3[2], pos: "P3", h: "h-16", order: 3 },
+            ].map(({ entry, pos, h, order }) => (
+              <Link
+                key={pos}
+                href={`/driver/${entry.username}`}
+                className="flex flex-col items-center group"
+                style={{ order }}
+              >
+                <img
+                  src={entry.avatarUrl || `https://github.com/${entry.username}.png`}
+                  alt=""
+                  className="w-12 h-12 rounded-full mb-1 group-hover:scale-105 transition-transform"
+                />
+                <span className="text-[#0a0a0a] text-sm font-bold">{entry.username}</span>
+                <span className="text-[#a3a3a3] text-xs">{entry.totalPoints} pts</span>
+                <span className="text-xs font-bold text-[#a3a3a3] mt-1">{pos}</span>
+                <div className={`w-20 ${h} rounded-t-lg mt-1 ${pos === "P1" ? "bg-[#0a0a0a]" : "bg-[#e5e5e5]"}`} />
+              </Link>
+            ))}
+          </div>
         )}
 
-        <div className="bg-neutral-900 rounded-xl border border-neutral-800 mt-8">
+        {/* Table */}
+        <div className="rounded-xl border border-[#e5e5e5] overflow-hidden">
           {entries.length > 0 ? (
-            <StandingsTable entries={entries} />
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-[#e5e5e5] text-[#a3a3a3] text-xs uppercase tracking-wider">
+                  <th className="text-left py-3 px-4 w-12 font-semibold">Pos</th>
+                  <th className="text-left py-3 px-4 font-semibold">Driver</th>
+                  <th className="text-right py-3 px-4 w-20 font-semibold">Points</th>
+                  <th className="text-right py-3 px-4 w-16 font-semibold hidden sm:table-cell">Wins</th>
+                  <th className="text-right py-3 px-4 w-20 font-semibold hidden sm:table-cell">Podiums</th>
+                </tr>
+              </thead>
+              <tbody>
+                {entries.map((entry) => (
+                  <tr key={entry.profileId} className="border-b border-[#f5f5f5] last:border-0 hover:bg-[#fafafa] transition-colors">
+                    <td className="py-3 px-4">
+                      <span className={`font-black ${entry.position <= 3 ? "text-[#0a0a0a]" : "text-[#a3a3a3]"}`}>
+                        {entry.position}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <Link href={`/driver/${entry.username}`} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+                        {entry.avatarUrl ? (
+                          <img src={entry.avatarUrl} alt="" className="w-8 h-8 rounded-full" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-[#f5f5f5]" />
+                        )}
+                        <div>
+                          <span className="text-[#0a0a0a] font-bold text-sm">{entry.username}</span>
+                          <span className="text-[#a3a3a3] font-mono text-xs ml-2">#{entry.carNumber}</span>
+                        </div>
+                      </Link>
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <span className="text-[#0a0a0a] font-bold">{entry.totalPoints}</span>
+                    </td>
+                    <td className="py-3 px-4 text-right text-[#525252] hidden sm:table-cell">{entry.wins}</td>
+                    <td className="py-3 px-4 text-right text-[#525252] hidden sm:table-cell">{entry.podiums}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           ) : (
-            <div className="text-center py-12 text-neutral-500">
-              No drivers have joined yet.{" "}
-              <a href="/login" className="text-red-400 hover:underline">
-                Be the first!
-              </a>
+            <div className="text-center py-12 text-[#a3a3a3]">
+              No drivers yet.{" "}
+              <Link href="/login" className="text-[#e10600] font-semibold hover:underline">Be the first!</Link>
             </div>
           )}
         </div>

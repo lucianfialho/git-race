@@ -49,7 +49,7 @@ export default async function HomePage() {
           <div className="flex flex-col md:flex-row gap-12 md:gap-20">
             <div className="flex-1">
               <h2 className="f1-heading text-xl text-[#0a0a0a] mb-3">
-                Your GitHub.<br/>Your Race.
+                How It Works
               </h2>
               <p className="text-[#525252] text-sm leading-relaxed">
                 GitRace transforms your GitHub contributions into F1 performance.

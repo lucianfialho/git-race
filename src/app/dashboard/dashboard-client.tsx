@@ -137,8 +137,38 @@ export function DashboardClient({ profile, latestSnapshot, currentGP }: Dashboar
             )}
 
             {!latestSnapshot && (
-              <div className="rounded-xl border border-[#e5e5e5] p-8 text-center bg-white">
-                <p className="text-[#525252] text-sm">No activity data yet. Click Sync to get started.</p>
+              <div className="rounded-xl border border-[#e5e5e5] p-6 bg-white">
+                <h3 className="font-bold text-[#0a0a0a] mb-4">Get Started</h3>
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <span className="w-6 h-6 rounded-full bg-[#0a0a0a] text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">1</span>
+                    <div className="flex-1">
+                      <p className="text-[#0a0a0a] text-sm font-semibold">Sync your GitHub activity</p>
+                      <p className="text-[#a3a3a3] text-xs mt-0.5">We'll read your contributions from this week to build your car stats.</p>
+                      <button
+                        onClick={handleSync}
+                        disabled={syncing}
+                        className="f1-btn f1-btn-primary rounded-lg text-xs mt-2 py-2 px-4"
+                      >
+                        {syncing ? "Syncing..." : "Sync Now"}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 opacity-50">
+                    <span className="w-6 h-6 rounded-full bg-[#e5e5e5] text-[#525252] text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">2</span>
+                    <div>
+                      <p className="text-[#0a0a0a] text-sm font-semibold">Qualify for the race (Mon–Fri)</p>
+                      <p className="text-[#a3a3a3] text-xs mt-0.5">Your contributions during the week determine your grid position.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 opacity-50">
+                    <span className="w-6 h-6 rounded-full bg-[#e5e5e5] text-[#525252] text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">3</span>
+                    <div>
+                      <p className="text-[#0a0a0a] text-sm font-semibold">Race on the weekend</p>
+                      <p className="text-[#a3a3a3] text-xs mt-0.5">Race simulation runs on Sunday with overtakes, pit stops, and F1 points.</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 

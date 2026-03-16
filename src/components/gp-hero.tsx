@@ -147,7 +147,11 @@ export function GPHero({ gp, status }: GPHeroProps) {
             {/* CTA */}
             <div className="flex items-center gap-3 mt-6">
               <Link href={linkHref} className="f1-btn f1-btn-primary rounded-lg text-sm">
-                {isLive ? "View Live" : "View Details"}
+                {status === "qualifying" ? "See Qualifying Grid" :
+                 status === "sprint" ? "Sprint Results" :
+                 status === "race_day" ? "Race in Progress" :
+                 status === "finished" ? "Race Results" :
+                 "Qualifying Schedule"}
               </Link>
               <Link href="/calendar" className="f1-btn f1-btn-secondary rounded-lg text-sm">
                 Full Calendar

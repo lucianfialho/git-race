@@ -47,7 +47,11 @@ export function CountdownTimer({
         { value: time.hours, label: "HRS" },
         { value: time.minutes, label: "MIN" },
         { value: time.seconds, label: "SEC" },
-      ].filter((b) => b.value > 0 || b.label === "SEC").map((b) => (
+      ].filter((b, i, arr) => {
+        if (b.label === "SEC") return true;
+        if (b.value > 0) return true;
+        return arr.slice(0, i).some((x) => x.value > 0);
+      }).map((b) => (
         <div key={b.label} className="text-center">
           <div className="text-2xl font-bold text-[#0a0a0a] leading-none">
             {String(b.value).padStart(2, "0")}

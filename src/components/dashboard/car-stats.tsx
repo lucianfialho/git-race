@@ -56,7 +56,7 @@ export function CarStatsDisplay({ stats, previousStats }: CarStatsDisplayProps) 
               <div className="stat-bar">
                 <div className="stat-bar-fill bg-[#0a0a0a]" style={{ width: `${value}%` }} />
               </div>
-              <p className="text-[#a3a3a3] text-xs mt-1 hidden group-hover:block">{hint}</p>
+              <p className="text-[#a3a3a3] text-xs mt-1">{hint}</p>
             </div>
           );
         })}

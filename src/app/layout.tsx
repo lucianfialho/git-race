@@ -33,7 +33,7 @@ export default async function RootLayout({
   const status = gp ? getGPStatus(gp, now) : null;
 
   return (
-    <html lang="en" className="dark">
+    <html lang="en">
       <body className={`${titillium.variable} font-[family-name:var(--font-titillium)] antialiased bg-white text-[#0a0a0a]`}>
         <ThemeProvider value={{ gp, theme, status }}>
           <Nav isAuthenticated={!!user} />
