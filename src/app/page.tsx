@@ -45,54 +45,51 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* How it works — editorial grid */}
+      {/* How it works */}
       <section className="max-w-5xl mx-auto px-4 md:px-8 py-20">
-        <div className="grid md:grid-cols-[1fr_1.2fr] gap-16 items-start">
-          {/* Left: pitch */}
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#e10600] mb-4">How It Works</p>
-            <h2 className="text-3xl md:text-4xl font-bold uppercase tracking-tight leading-[0.95] text-[#0a0a0a]">
-              Code all week.<br/>Race on Sunday.
-            </h2>
-            <p className="text-[#525252] mt-4 leading-relaxed">
-              GitRace transforms your GitHub contributions into F1 car performance.
-              Qualify during the week, race on weekends, climb from F3 to F1.
-            </p>
-            <Link href="/login" className="f1-btn f1-btn-primary rounded-sm mt-6 text-sm">
+        <div className="max-w-xl">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#e10600] mb-4">How It Works</p>
+          <h2 className="text-3xl md:text-4xl font-bold uppercase tracking-tight leading-[0.95] text-[#0a0a0a]">
+            Code all week.<br/>Race on Sunday.
+          </h2>
+          <p className="text-[#525252] mt-4 leading-relaxed">
+            GitRace transforms your GitHub contributions into F1 car performance.
+            Qualify during the week, race on weekends, climb from F3 to F1.
+          </p>
+          <div className="flex items-center gap-4 mt-6">
+            <Link href="/login" className="f1-btn f1-btn-primary rounded-sm text-sm">
               Sign in with GitHub
             </Link>
             {driverCount !== null && driverCount > 0 && (
-              <p className="text-[#a3a3a3] text-xs mt-3">{driverCount} developers racing this season</p>
+              <span className="text-[#a3a3a3] text-xs">{driverCount} developers racing</span>
             )}
           </div>
+        </div>
+      </section>
 
-          {/* Right: car spec sheet */}
-          <div className="border border-[#e5e5e5] rounded-sm overflow-hidden">
-            <div className="px-5 py-3 border-b border-[#e5e5e5] bg-[#fafafa]">
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#a3a3a3]">Car Specification</p>
-            </div>
-            <div className="divide-y divide-[#f0f0f0]">
-              {[
-                { comp: "Power Unit", source: "Commits", pct: 72 },
-                { comp: "Aerodynamics", source: "Pull Requests", pct: 58 },
-                { comp: "Reliability", source: "Daily Activity", pct: 85 },
-                { comp: "Tire Management", source: "Code Reviews", pct: 44 },
-                { comp: "Strategy", source: "Issues", pct: 63 },
-              ].map((c) => (
-                <div key={c.comp} className="px-5 py-3.5 flex items-center gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-baseline justify-between mb-1.5">
-                      <span className="text-sm font-bold text-[#0a0a0a]">{c.comp}</span>
-                      <span className="text-xs text-[#a3a3a3] font-mono">{c.pct}</span>
-                    </div>
-                    <div className="h-1 bg-[#f0f0f0] rounded-full overflow-hidden">
-                      <div className="h-full bg-[#0a0a0a] rounded-full transition-all duration-1000" style={{ width: `${c.pct}%` }} />
-                    </div>
-                  </div>
-                  <span className="text-[10px] uppercase tracking-wider text-[#a3a3a3] w-20 text-right shrink-0">{c.source}</span>
+      {/* Car Spec Sheet */}
+      <section className="border-t border-[#e5e5e5]">
+        <div className="max-w-5xl mx-auto px-4 md:px-8 py-16">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#a3a3a3] mb-6">Car Specification</p>
+          <div className="grid grid-cols-1 sm:grid-cols-5 gap-0 border border-[#e5e5e5] rounded-sm overflow-hidden">
+            {[
+              { comp: "Power Unit", source: "Commits", pct: 72 },
+              { comp: "Aerodynamics", source: "Pull Requests", pct: 58 },
+              { comp: "Reliability", source: "Daily Activity", pct: 85 },
+              { comp: "Tire Mgmt", source: "Code Reviews", pct: 44 },
+              { comp: "Strategy", source: "Issues", pct: 63 },
+            ].map((c, i) => (
+              <div key={c.comp} className={`p-4 ${i < 4 ? "border-b sm:border-b-0 sm:border-r border-[#e5e5e5]" : ""}`}>
+                <div className="flex items-baseline justify-between mb-2">
+                  <span className="text-sm font-bold text-[#0a0a0a]">{c.comp}</span>
+                  <span className="text-xs text-[#a3a3a3] font-mono">{c.pct}</span>
                 </div>
-              ))}
-            </div>
+                <div className="h-1 bg-[#f0f0f0] rounded-full overflow-hidden mb-2">
+                  <div className="h-full bg-[#0a0a0a] rounded-full" style={{ width: `${c.pct}%` }} />
+                </div>
+                <span className="text-[10px] uppercase tracking-wider text-[#a3a3a3]">{c.source}</span>
+              </div>
+            ))}
           </div>
         </div>
       </section>
