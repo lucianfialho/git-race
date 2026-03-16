@@ -58,12 +58,14 @@ export default async function HomePage() {
         {/* Red accent bar */}
         <div className="h-1 bg-[#e10600]" />
 
-        {/* Hyperspeed WebGL — positioned bottom-right */}
-        <div className="absolute bottom-0 right-0 w-[60%] h-[80%] pointer-events-none z-0 opacity-80 hidden md:block">
+        {/* Hyperspeed WebGL — positioned right side, full height */}
+        <div className="absolute top-0 right-0 w-[65%] h-full pointer-events-none z-0 opacity-90 hidden md:block">
           <HyperspeedWrapper />
         </div>
         {/* Gradient fade from left to blend with text area */}
-        <div className="absolute bottom-0 right-0 w-[60%] h-[80%] pointer-events-none z-[1] hidden md:block" style={{ background: "linear-gradient(to right, #0a0a0a 0%, transparent 40%)" }} />
+        <div className="absolute inset-0 pointer-events-none z-[1] hidden md:block" style={{ background: "linear-gradient(to right, #0a0a0a 0%, #0a0a0a 30%, transparent 60%)" }} />
+        {/* Top fade */}
+        <div className="absolute inset-0 pointer-events-none z-[1] hidden md:block" style={{ background: "linear-gradient(to bottom, #0a0a0a 0%, transparent 15%)" }} />
 
         <div className="max-w-5xl mx-auto px-4 md:px-8 py-16 md:py-24 relative z-10">
 
