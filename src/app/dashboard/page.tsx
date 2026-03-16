@@ -56,6 +56,7 @@ export default async function DashboardPage() {
         car_number: profile.car_number,
         total_points: profile.total_points,
         car_stats: carStats,
+        github_stats: profile.github_stats ?? null,
       }}
       latestSnapshot={latestSnapshot}
       currentGP={currentGP ? {

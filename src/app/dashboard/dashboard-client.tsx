@@ -15,6 +15,13 @@ interface DashboardClientProps {
     car_number: number;
     total_points: number;
     car_stats: CarStats;
+    github_stats: {
+      total_stars?: number;
+      total_repos?: number;
+      followers?: number;
+      following?: number;
+      top_languages?: string[];
+    } | null;
   };
   latestSnapshot: {
     commits_count: number;
@@ -118,6 +125,41 @@ export function DashboardClient({ profile, latestSnapshot, currentGP }: Dashboar
                   <Link href={`/gp/${currentGP.slug}/qualifying`} className="f1-btn f1-btn-secondary text-xs rounded-lg py-2 px-3">Qualifying</Link>
                   <Link href={`/gp/${currentGP.slug}/race`} className="f1-btn f1-btn-primary text-xs rounded-lg py-2 px-3">Race</Link>
                 </div>
+              </div>
+            )}
+
+            {/* GitHub Profile Stats */}
+            {profile.github_stats && (profile.github_stats.total_stars !== undefined || profile.github_stats.total_repos !== undefined) && (
+              <div className="rounded-xl border border-[#e5e5e5] p-6 bg-white">
+                <h3 className="font-bold text-[#0a0a0a] mb-4">GitHub Profile</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  {[
+                    { label: "Stars", value: profile.github_stats.total_stars ?? 0, icon: "\u{2B50}" },
+                    { label: "Repos", value: profile.github_stats.total_repos ?? 0, icon: "\u{1F4E6}" },
+                    { label: "Followers", value: profile.github_stats.followers ?? 0, icon: "\u{1F465}" },
+                    { label: "Following", value: profile.github_stats.following ?? 0, icon: "\u{1F464}" },
+                  ].map((stat) => (
+                    <div key={stat.label} className="flex items-center gap-2">
+                      <span className="text-sm">{stat.icon}</span>
+                      <div>
+                        <p className="text-lg font-black text-[#0a0a0a] leading-none">{stat.value.toLocaleString()}</p>
+                        <p className="text-[#a3a3a3] text-xs">{stat.label}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {profile.github_stats.top_languages && profile.github_stats.top_languages.length > 0 && (
+                  <div className="mt-4 pt-3 border-t border-[#f0f0f0]">
+                    <p className="text-[#a3a3a3] text-xs mb-2">Top Languages</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {profile.github_stats.top_languages.map((lang: string) => (
+                        <span key={lang} className="text-xs px-2 py-0.5 rounded bg-[#f5f5f5] text-[#525252] font-medium">
+                          {lang}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

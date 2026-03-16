@@ -2,8 +2,10 @@ import { createGitHubClient } from "./client";
 import {
   CONTRIBUTION_QUERY,
   PR_DETAILS_QUERY,
+  PROFILE_STATS_QUERY,
   type ContributionData,
   type PRDetailsData,
+  type ProfileStatsData,
 } from "./queries";
 import { calculateScores } from "../race/metrics";
 import { calculateCarComponents } from "../race/car-components";
@@ -104,6 +106,43 @@ export async function syncProfileActivity(
     };
   } catch (error) {
     console.error(`Sync failed for ${profile.github_username}:`, error);
+    return null;
+  }
+}
+
+export async function syncProfileStats(profile: Profile) {
+  if (!profile.github_token) return null;
+
+  const client = createGitHubClient(profile.github_token);
+
+  try {
+    const data = await client.request<ProfileStatsData>(PROFILE_STATS_QUERY);
+
+    const totalStars = data.viewer.repositories.nodes.reduce(
+      (sum, repo) => sum + repo.stargazerCount, 0
+    );
+
+    // Count top languages
+    const langCounts: Record<string, number> = {};
+    for (const repo of data.viewer.repositories.nodes) {
+      if (repo.primaryLanguage?.name) {
+        langCounts[repo.primaryLanguage.name] = (langCounts[repo.primaryLanguage.name] || 0) + 1;
+      }
+    }
+    const topLanguages = Object.entries(langCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([name]) => name);
+
+    return {
+      total_stars: totalStars,
+      total_repos: data.viewer.repositories.totalCount,
+      followers: data.viewer.followers.totalCount,
+      following: data.viewer.following.totalCount,
+      top_languages: topLanguages,
+    };
+  } catch (error) {
+    console.error(`Profile stats sync failed for ${profile.github_username}:`, error);
     return null;
   }
 }

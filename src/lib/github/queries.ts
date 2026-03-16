@@ -75,6 +75,38 @@ export const PR_DETAILS_QUERY = gql`
   }
 `;
 
+export const PROFILE_STATS_QUERY = gql`
+  query ProfileStats {
+    viewer {
+      login
+      followers { totalCount }
+      following { totalCount }
+      repositories(first: 100, ownerAffiliations: OWNER, orderBy: { field: STARGAZERS, direction: DESC }) {
+        totalCount
+        nodes {
+          stargazerCount
+          primaryLanguage { name }
+        }
+      }
+    }
+  }
+`;
+
+export interface ProfileStatsData {
+  viewer: {
+    login: string;
+    followers: { totalCount: number };
+    following: { totalCount: number };
+    repositories: {
+      totalCount: number;
+      nodes: Array<{
+        stargazerCount: number;
+        primaryLanguage: { name: string } | null;
+      }>;
+    };
+  };
+}
+
 export interface ContributionData {
   viewer: {
     login: string;

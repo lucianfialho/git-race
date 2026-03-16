@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { syncProfileActivity } from "@/lib/github/sync";
+import { syncProfileActivity, syncProfileStats } from "@/lib/github/sync";
 import { getMostRelevantGP, getNow } from "@/lib/f1/calendar";
 
 export async function POST() {
@@ -91,18 +91,26 @@ export async function POST() {
       );
     }
 
-    // Update car_stats on profile
+    // Fetch GitHub profile stats (stars, repos, followers) in parallel
+    const profileStats = await syncProfileStats(profile);
+
+    // Update car_stats + github_stats on profile
+    const profileUpdate: Record<string, unknown> = {
+      car_stats: {
+        power_unit: data.power_unit_score,
+        aero: data.aero_score,
+        reliability: data.reliability_score,
+        tire_mgmt: data.tire_mgmt_score,
+        strategy: data.strategy_score,
+      },
+    };
+    if (profileStats) {
+      profileUpdate.github_stats = profileStats;
+    }
+
     await admin
       .from("profiles")
-      .update({
-        car_stats: {
-          power_unit: data.power_unit_score,
-          aero: data.aero_score,
-          reliability: data.reliability_score,
-          tire_mgmt: data.tire_mgmt_score,
-          strategy: data.strategy_score,
-        },
-      })
+      .update(profileUpdate)
       .eq("id", profile.id);
 
     return NextResponse.json({
