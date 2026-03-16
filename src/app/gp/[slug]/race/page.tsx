@@ -6,6 +6,8 @@ import { runQualifying, type QualifyingDriver } from "@/lib/race/qualifying";
 import { simulateRace, type RaceDriver, type RaceConfig } from "@/lib/race/simulation";
 import { fillGridWithBots } from "@/lib/race/matchmaking";
 import { CountdownTimer } from "@/components/countdown-timer";
+import { EventTimeline } from "@/components/race/event-timeline";
+import { loadSnapshot } from "@/lib/race/snapshots";
 
 export const dynamic = "force-dynamic";
 
@@ -17,13 +19,6 @@ export default async function RaceResultPage({ params }: { params: Promise<{ slu
   const now = getNow();
   const status = getGPStatus(gp, now);
   const supabase = await createClient();
-
-  // Get profiles
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("id, github_username, avatar_url, car_stats")
-    .not("car_stats", "is", null)
-    .order("total_points", { ascending: false });
 
   // Simulate qualifying + race
   let raceResults: Array<{
@@ -43,52 +38,68 @@ export default async function RaceResultPage({ params }: { params: Promise<{ slu
   let hadRain = false;
   let safetyCars = 0;
 
-  if (profiles && profiles.length > 0 && (status === "race_day" || status === "sprint" || status === "finished")) {
-    const realDrivers = profiles.map((p) => ({ profileId: p.id }));
-    const grid = fillGridWithBots(realDrivers, 1, slug);
+  // First, try to load persisted snapshot from DB
+  const snapshot = await loadSnapshot(slug);
+  if (snapshot?.race_data && snapshot.race_data.results) {
+    raceResults = snapshot.race_data.results;
+    events = snapshot.race_data.events;
+    hadRain = snapshot.race_data.hadRain;
+    safetyCars = snapshot.race_data.safetyCars;
+  } else if (status === "race_day" || status === "sprint" || status === "finished") {
+    // Fallback: simulate on-the-fly
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, github_username, avatar_url, car_stats")
+      .not("car_stats", "is", null)
+      .order("total_points", { ascending: false });
 
-    const qualDrivers: QualifyingDriver[] = grid.map((slot) => {
-      if (slot.isBot) {
-        return { profileId: slot.botName ?? "bot", name: slot.botName ?? "Bot", carStats: slot.botStats!, isBot: true };
-      }
-      const p = profiles.find((pr) => pr.id === slot.profileId);
-      return {
-        profileId: slot.profileId!,
-        name: p?.github_username ?? "Unknown",
-        carStats: p?.car_stats ?? { power_unit: 30, aero: 30, reliability: 30, tire_mgmt: 30, strategy: 30 },
-        isBot: false,
-      };
-    });
+    if (profiles && profiles.length > 0) {
+      const realDrivers = profiles.map((p) => ({ profileId: p.id }));
+      const grid = fillGridWithBots(realDrivers, 1, slug);
 
-    const qualiResults = runQualifying(qualDrivers, `${slug}-quali`);
+      const qualDrivers: QualifyingDriver[] = grid.map((slot) => {
+        if (slot.isBot) {
+          return { profileId: slot.botName ?? "bot", name: slot.botName ?? "Bot", carStats: slot.botStats!, isBot: true };
+        }
+        const p = profiles.find((pr) => pr.id === slot.profileId);
+        return {
+          profileId: slot.profileId!,
+          name: p?.github_username ?? "Unknown",
+          carStats: p?.car_stats ?? { power_unit: 30, aero: 30, reliability: 30, tire_mgmt: 30, strategy: 30 },
+          isBot: false,
+        };
+      });
 
-    const raceDrivers: RaceDriver[] = qualiResults.map((q) => {
-      const qd = qualDrivers.find((d) => d.profileId === q.profileId)!;
-      return { profileId: q.profileId, name: q.name, carStats: qd.carStats, gridPosition: q.finalPosition, isBot: q.isBot };
-    });
+      const qualiResults = runQualifying(qualDrivers, `${slug}-quali`);
 
-    const config: RaceConfig = { totalLaps: 57, isSprint: false, seed: `${slug}-race`, weatherChance: 0.3 };
-    const sim = simulateRace(raceDrivers, config);
+      const raceDrivers: RaceDriver[] = qualiResults.map((q) => {
+        const qd = qualDrivers.find((d) => d.profileId === q.profileId)!;
+        return { profileId: q.profileId, name: q.name, carStats: qd.carStats, gridPosition: q.finalPosition, isBot: q.isBot };
+      });
 
-    raceResults = sim.results.map((r) => {
-      const p = profiles.find((pr) => pr.github_username === r.name || pr.id === r.profileId);
-      return {
-        position: r.finalPosition,
-        name: r.name,
-        isBot: r.isBot,
-        avatarUrl: p?.avatar_url ?? "",
-        gridPosition: r.gridPosition,
-        points: r.points,
-        fastestLap: r.fastestLap,
-        dnf: r.dnf,
-        dnfReason: r.dnfReason,
-        gap: r.gapToLeader,
-      };
-    });
+      const config: RaceConfig = { totalLaps: 57, isSprint: false, seed: `${slug}-race`, weatherChance: 0.3 };
+      const sim = simulateRace(raceDrivers, config);
 
-    events = sim.events;
-    hadRain = sim.hadRain;
-    safetyCars = sim.safetyCars;
+      raceResults = sim.results.map((r) => {
+        const p = profiles.find((pr) => pr.github_username === r.name || pr.id === r.profileId);
+        return {
+          position: r.finalPosition,
+          name: r.name,
+          isBot: r.isBot,
+          avatarUrl: p?.avatar_url ?? "",
+          gridPosition: r.gridPosition,
+          points: r.points,
+          fastestLap: r.fastestLap,
+          dnf: r.dnf,
+          dnfReason: r.dnfReason,
+          gap: r.gapToLeader,
+        };
+      });
+
+      events = sim.events;
+      hadRain = sim.hadRain;
+      safetyCars = sim.safetyCars;
+    }
   }
 
   const podium = raceResults.slice(0, 3);
@@ -153,19 +164,7 @@ export default async function RaceResultPage({ params }: { params: Promise<{ slu
             </div>
 
             {/* Timeline */}
-            <div className="rounded-sm border border-[#e5e5e5] p-5 mb-6">
-              <h3 className="font-bold text-[#0a0a0a] mb-4 text-sm uppercase tracking-wider">Race Timeline</h3>
-              <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                {events.map((e, i) => (
-                  <div key={i} className="flex gap-3 items-start">
-                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-sm bg-[#f5f5f5] text-[#525252] shrink-0 w-10 text-center">
-                      L{e.lap}
-                    </span>
-                    <p className="text-[#525252] text-sm">{e.description}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <EventTimeline events={events} />
 
             {/* Classification */}
             <div className="rounded-sm border border-[#e5e5e5] overflow-hidden">

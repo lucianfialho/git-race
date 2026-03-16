@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { runQualifying, type QualifyingDriver } from "@/lib/race/qualifying";
 import { fillGridWithBots } from "@/lib/race/matchmaking";
 import { CountdownTimer } from "@/components/countdown-timer";
+import { loadSnapshot } from "@/lib/race/snapshots";
 
 export const dynamic = "force-dynamic";
 
@@ -16,13 +17,6 @@ export default async function QualifyingPage({ params }: { params: Promise<{ slu
   const now = getNow();
   const status = getGPStatus(gp, now);
   const supabase = await createClient();
-
-  // Get all profiles to simulate qualifying
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("id, github_username, avatar_url, car_stats")
-    .not("car_stats", "is", null)
-    .order("total_points", { ascending: false });
 
   // Generate qualifying results from current car stats
   let qualiResults: Array<{
@@ -36,37 +30,50 @@ export default async function QualifyingPage({ params }: { params: Promise<{ slu
     eliminatedIn: string | null;
   }> = [];
 
-  if (profiles && profiles.length > 0) {
-    const realDrivers = profiles.map((p) => ({ profileId: p.id }));
-    const grid = fillGridWithBots(realDrivers, 1, slug);
+  // First, try to load persisted snapshot from DB
+  const snapshot = await loadSnapshot(slug);
+  if (snapshot?.qualifying_data && Array.isArray(snapshot.qualifying_data)) {
+    qualiResults = snapshot.qualifying_data;
+  } else {
+    // Fallback: simulate on-the-fly
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, github_username, avatar_url, car_stats")
+      .not("car_stats", "is", null)
+      .order("total_points", { ascending: false });
 
-    const qualDrivers: QualifyingDriver[] = grid.map((slot) => {
-      if (slot.isBot) {
-        return { profileId: slot.botName ?? "bot", name: slot.botName ?? "Bot", carStats: slot.botStats!, isBot: true };
-      }
-      const p = profiles.find((pr) => pr.id === slot.profileId);
-      return {
-        profileId: slot.profileId!,
-        name: p?.github_username ?? "Unknown",
-        carStats: p?.car_stats ?? { power_unit: 30, aero: 30, reliability: 30, tire_mgmt: 30, strategy: 30 },
-        isBot: false,
-      };
-    });
+    if (profiles && profiles.length > 0) {
+      const realDrivers = profiles.map((p) => ({ profileId: p.id }));
+      const grid = fillGridWithBots(realDrivers, 1, slug);
 
-    const results = runQualifying(qualDrivers, `${slug}-quali`);
-    qualiResults = results.map((r) => {
-      const p = profiles.find((pr) => pr.github_username === r.name || pr.id === r.profileId);
-      return {
-        position: r.finalPosition,
-        name: r.name,
-        isBot: r.isBot,
-        avatarUrl: p?.avatar_url ?? "",
-        q1Time: r.q1Time,
-        q2Time: r.q2Time,
-        q3Time: r.q3Time,
-        eliminatedIn: r.eliminatedIn,
-      };
-    });
+      const qualDrivers: QualifyingDriver[] = grid.map((slot) => {
+        if (slot.isBot) {
+          return { profileId: slot.botName ?? "bot", name: slot.botName ?? "Bot", carStats: slot.botStats!, isBot: true };
+        }
+        const p = profiles.find((pr) => pr.id === slot.profileId);
+        return {
+          profileId: slot.profileId!,
+          name: p?.github_username ?? "Unknown",
+          carStats: p?.car_stats ?? { power_unit: 30, aero: 30, reliability: 30, tire_mgmt: 30, strategy: 30 },
+          isBot: false,
+        };
+      });
+
+      const results = runQualifying(qualDrivers, `${slug}-quali`);
+      qualiResults = results.map((r) => {
+        const p = profiles.find((pr) => pr.github_username === r.name || pr.id === r.profileId);
+        return {
+          position: r.finalPosition,
+          name: r.name,
+          isBot: r.isBot,
+          avatarUrl: p?.avatar_url ?? "",
+          q1Time: r.q1Time,
+          q2Time: r.q2Time,
+          q3Time: r.q3Time,
+          eliminatedIn: r.eliminatedIn,
+        };
+      });
+    }
   }
 
   const qualiStart = new Date(gp.dates.qualiStart);

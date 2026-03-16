@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getMostRelevantGP, getGPStatus, getNow } from "@/lib/f1/calendar";
 import { runQualifying, type QualifyingDriver } from "@/lib/race/qualifying";
 import { fillGridWithBots } from "@/lib/race/matchmaking";
+import { saveSnapshot, type QualifyingSnapshot } from "@/lib/race/snapshots";
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
@@ -75,6 +76,28 @@ export async function GET(request: Request) {
       q3_time: r.q3Time,
       eliminated_in: r.eliminatedIn,
     }));
+
+    // Save qualifying snapshot to DB
+    const qualifyingSnapData: QualifyingSnapshot[] = results.map((r) => {
+      const profile = profiles.find((p) => p.github_username === r.name || p.id === r.profileId);
+      return {
+        position: r.finalPosition,
+        name: r.name,
+        profileId: r.profileId,
+        isBot: r.isBot,
+        avatarUrl: profile?.avatar_url ?? "",
+        q1Time: r.q1Time,
+        q2Time: r.q2Time,
+        q3Time: r.q3Time,
+        eliminatedIn: r.eliminatedIn,
+      };
+    });
+
+    try {
+      await saveSnapshot(gp.slug, qualifyingSnapData, null);
+    } catch (err) {
+      console.error("Failed to save qualifying snapshot:", err);
+    }
 
     return NextResponse.json({
       success: true,

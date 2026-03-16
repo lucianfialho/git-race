@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { syncProfileActivity, syncProfileStats } from "@/lib/github/sync";
 import { getMostRelevantGP, getNow } from "@/lib/f1/calendar";
+import { checkContributionAchievements } from "@/lib/race/achievements";
 
 export async function POST() {
   const supabase = await createClient();
@@ -123,6 +124,15 @@ export async function POST() {
       .update(profileUpdate)
       .eq("id", profile.id);
 
+    // Check contribution-based achievements
+    let newAchievements: string[] = [];
+    try {
+      const unlocked = await checkContributionAchievements(profile.id, admin);
+      newAchievements = unlocked.map((a) => a.slug);
+    } catch (err) {
+      console.error("Achievement check failed:", err);
+    }
+
     return NextResponse.json({
       success: true,
       gp: gp?.name ?? "Current week",
@@ -132,6 +142,7 @@ export async function POST() {
         prs_reviewed: data.prs_reviewed,
         issues: data.issues_opened + data.issues_closed,
       },
+      achievements: newAchievements,
     });
   } catch (err) {
     console.error("Sync error:", err);

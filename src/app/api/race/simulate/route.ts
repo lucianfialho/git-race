@@ -5,6 +5,8 @@ import { getMostRelevantGP, getNow } from "@/lib/f1/calendar";
 import { runQualifying, type QualifyingDriver } from "@/lib/race/qualifying";
 import { simulateRace, type RaceDriver, type RaceConfig } from "@/lib/race/simulation";
 import { fillGridWithBots } from "@/lib/race/matchmaking";
+import { checkAndAwardAchievements } from "@/lib/race/achievements";
+import { saveSnapshot, type QualifyingSnapshot, type RaceDataSnapshot } from "@/lib/race/snapshots";
 
 /**
  * POST /api/race/simulate
@@ -98,6 +100,74 @@ export async function POST() {
     }
   }
 
+  // Check and award achievements for each real driver
+  const achievementsAwarded: Record<string, string[]> = {};
+  for (const dr of raceResult.results) {
+    if (dr.isBot) continue;
+
+    const qualiResult = qualiResults.find((q) => q.profileId === dr.profileId);
+    if (!qualiResult) continue;
+
+    try {
+      const newAchievements = await checkAndAwardAchievements(
+        dr.profileId,
+        dr,
+        qualiResult,
+        raceResult,
+        admin
+      );
+      if (newAchievements.length > 0) {
+        achievementsAwarded[dr.profileId] = newAchievements.map((a) => a.slug);
+      }
+    } catch (err) {
+      console.error(`Achievement check failed for ${dr.profileId}:`, err);
+    }
+  }
+
+  // Save snapshot to DB
+  const qualifyingSnapData: QualifyingSnapshot[] = qualiResults.map((r) => {
+    const profile = profiles.find((p) => p.github_username === r.name || p.id === r.profileId);
+    return {
+      position: r.finalPosition,
+      name: r.name,
+      profileId: r.profileId,
+      isBot: r.isBot,
+      avatarUrl: profile?.avatar_url ?? "",
+      q1Time: r.q1Time,
+      q2Time: r.q2Time,
+      q3Time: r.q3Time,
+      eliminatedIn: r.eliminatedIn,
+    };
+  });
+
+  const raceSnapData: RaceDataSnapshot = {
+    results: raceResult.results.map((r) => {
+      const profile = profiles.find((p) => p.github_username === r.name || p.id === r.profileId);
+      return {
+        position: r.finalPosition,
+        name: r.name,
+        profileId: r.profileId,
+        isBot: r.isBot,
+        avatarUrl: profile?.avatar_url ?? "",
+        gridPosition: r.gridPosition,
+        points: r.points,
+        fastestLap: r.fastestLap,
+        dnf: r.dnf,
+        dnfReason: r.dnfReason,
+        gap: r.gapToLeader,
+      };
+    }),
+    events: raceResult.events.map((e) => ({ lap: e.lap, type: e.type, description: e.description })),
+    hadRain: raceResult.hadRain,
+    safetyCars: raceResult.safetyCars,
+  };
+
+  try {
+    await saveSnapshot(gp.slug, qualifyingSnapData, raceSnapData);
+  } catch (err) {
+    console.error("Failed to save race snapshot:", err);
+  }
+
   return NextResponse.json({
     success: true,
     gp: gp.name,
@@ -133,5 +203,6 @@ export async function POST() {
       hadRain: raceResult.hadRain,
       safetyCars: raceResult.safetyCars,
     },
+    achievements: achievementsAwarded,
   });
 }

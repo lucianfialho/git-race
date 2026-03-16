@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { DriverCard } from "@/components/driver/driver-card";
+import { CompareLink } from "@/components/driver/compare-link";
 import { notFound } from "next/navigation";
 
 export async function generateMetadata({ params }: { params: Promise<{ username: string }> }) {
@@ -60,6 +61,12 @@ export default async function DriverPage({ params }: { params: Promise<{ usernam
               <p className="text-[#a3a3a3] text-xs">{s.label}</p>
             </div>
           ))}
+        </div>
+
+        {/* Compare with another driver */}
+        <div className="mt-6">
+          <h3 className="font-bold text-[#0a0a0a] text-sm">Compare with another driver</h3>
+          <CompareLink username={profile.github_username} />
         </div>
 
         <div className="mt-8">

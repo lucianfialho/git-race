@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getMostRelevantGP, getGPStatus, getNow } from "@/lib/f1/calendar";
 import { simulateRace, type RaceDriver, type RaceConfig } from "@/lib/race/simulation";
 import { fillGridWithBots } from "@/lib/race/matchmaking";
+import { saveSnapshot, loadSnapshotAdmin, type RaceDataSnapshot } from "@/lib/race/snapshots";
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
@@ -81,6 +82,40 @@ export async function GET(request: Request) {
             .eq("id", profile.id);
         }
       }
+    }
+
+    // Save race snapshot to DB (preserve existing qualifying data)
+    const existingSnapshot = await loadSnapshotAdmin(gp.slug);
+    const raceSnapData: RaceDataSnapshot = {
+      results: result.results.map((r) => {
+        const profile = profiles.find((p) => p.id === r.profileId);
+        return {
+          position: r.finalPosition,
+          name: r.name,
+          profileId: r.profileId,
+          isBot: r.isBot,
+          avatarUrl: profile?.github_username ? "" : "",
+          gridPosition: r.gridPosition,
+          points: r.points,
+          fastestLap: r.fastestLap,
+          dnf: r.dnf,
+          dnfReason: r.dnfReason,
+          gap: r.gapToLeader,
+        };
+      }),
+      events: result.events.map((e) => ({ lap: e.lap, type: e.type, description: e.description })),
+      hadRain: result.hadRain,
+      safetyCars: result.safetyCars,
+    };
+
+    try {
+      await saveSnapshot(
+        gp.slug,
+        existingSnapshot?.qualifying_data ?? null,
+        raceSnapData
+      );
+    } catch (err) {
+      console.error("Failed to save race snapshot:", err);
     }
 
     return NextResponse.json({
