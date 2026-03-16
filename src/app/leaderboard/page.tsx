@@ -1,11 +1,14 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { LeaderboardTabs } from "./leaderboard-tabs";
 
 export const metadata = {
   title: "Standings - GitRace",
   description: "Season standings for the GitHub developer racing championship",
 };
+
+export const dynamic = "force-dynamic";
 
 export default async function LeaderboardPage() {
   const supabase = await createClient();
