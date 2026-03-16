@@ -1,33 +1,33 @@
-// SVG path data for F1 circuit track layouts
-// These are simplified outlines of each circuit
+// Maps GP slug to track SVG file in /public/tracks/
+// SVGs sourced from github.com/julesr0y/f1-circuits-svg (MIT license)
 
-export const TRACK_LAYOUTS: Record<string, string> = {
-  "australia-2025": "M 50 20 C 30 20 15 35 15 55 C 15 70 25 80 40 85 C 50 88 60 85 70 80 C 80 75 85 65 85 55 C 85 45 80 35 70 28 C 65 24 58 20 50 20 Z",
-  "china-2025": "M 30 15 L 30 40 C 30 50 20 55 20 65 C 20 75 30 80 40 80 L 70 80 C 80 80 85 70 80 60 L 75 40 C 73 30 65 20 55 20 L 45 20 C 40 20 35 18 30 15 Z",
-  "japan-2025": "M 25 50 C 25 30 35 15 50 15 C 65 15 75 25 75 40 C 75 50 65 55 60 60 C 55 65 60 70 70 75 C 75 78 70 85 60 85 C 45 85 30 75 25 60 Z",
-  "bahrain-2025": "M 40 15 L 40 35 L 30 35 L 30 55 L 40 55 L 40 70 L 60 70 L 60 55 L 70 55 L 70 35 L 60 35 L 60 15 Z",
-  "saudi-arabia-2025": "M 20 80 L 20 30 C 20 20 30 15 40 15 L 60 15 C 70 15 80 20 80 30 L 80 50 L 60 50 L 60 60 L 80 60 L 80 80 Z",
-  "miami-2025": "M 20 30 L 50 15 L 80 30 L 80 50 C 80 60 70 65 60 65 L 50 65 C 40 65 35 70 35 75 C 35 80 30 85 20 85 L 20 30 Z",
-  "emilia-romagna-2025": "M 20 60 C 20 40 30 25 45 20 C 55 17 65 20 75 30 C 80 35 82 45 80 55 C 78 65 70 75 55 80 C 40 85 25 78 20 60 Z",
-  "monaco-2025": "M 25 45 L 35 20 L 55 20 L 75 35 L 75 55 C 75 65 65 75 55 78 L 35 78 C 28 78 25 70 25 60 Z",
-  "spain-2025": "M 30 25 C 40 15 60 15 70 25 L 80 40 L 80 60 L 70 75 C 60 85 40 85 30 75 L 20 60 L 20 40 Z",
-  "canada-2025": "M 20 50 L 35 20 L 50 30 L 65 15 L 80 30 L 80 70 L 65 85 L 50 70 L 35 85 L 20 70 Z",
-  "austria-2025": "M 30 80 L 20 50 L 30 20 L 50 15 L 70 20 L 80 40 L 75 60 L 80 80 Z",
-  "great-britain-2025": "M 25 40 C 25 25 40 15 55 15 C 70 15 80 25 80 40 C 80 50 70 55 65 60 C 60 65 65 75 60 80 C 55 85 40 85 35 80 C 30 75 25 60 25 40 Z",
-  "belgium-2025": "M 20 80 L 25 50 L 20 20 L 50 15 L 80 25 L 75 55 L 80 80 L 50 85 Z",
-  "hungary-2025": "M 30 20 C 45 15 55 20 65 30 C 70 35 75 45 75 55 C 75 65 70 75 60 80 C 50 85 40 80 30 70 C 25 60 20 45 25 35 C 27 28 28 22 30 20 Z",
-  "netherlands-2025": "M 25 50 C 25 30 35 20 50 20 C 65 20 75 30 75 50 C 75 70 65 80 50 80 C 35 80 25 70 25 50 Z",
-  "italy-2025": "M 30 80 L 20 50 C 20 30 35 15 55 15 C 70 15 80 25 80 40 L 80 80 L 60 75 L 50 85 L 40 75 Z",
-  "azerbaijan-2025": "M 20 70 L 20 30 L 40 15 L 60 15 L 80 30 L 80 50 L 60 60 L 80 70 L 80 85 L 40 85 L 20 70 Z",
-  "singapore-2025": "M 25 30 L 45 15 L 75 20 L 80 45 L 70 60 L 80 75 L 65 85 L 35 85 L 20 70 L 25 50 Z",
-  "usa-2025": "M 20 50 L 30 20 L 50 15 L 70 20 L 80 40 C 82 55 75 65 65 70 L 50 75 C 40 78 30 75 25 65 Z",
-  "mexico-2025": "M 30 25 L 50 15 L 70 25 L 80 45 C 80 60 75 70 65 75 L 55 80 C 45 83 35 80 30 72 L 20 55 C 18 40 22 30 30 25 Z",
-  "brazil-2025": "M 75 30 C 80 40 80 55 75 65 C 70 75 55 82 45 80 C 35 78 25 70 22 58 C 20 45 22 35 28 28 C 35 20 50 18 60 20 C 68 22 73 25 75 30 Z",
-  "las-vegas-2025": "M 25 20 L 75 20 L 80 40 L 60 45 L 75 70 L 75 85 L 25 85 L 25 70 L 40 45 L 20 40 Z",
-  "qatar-2025": "M 20 55 C 20 35 30 20 50 20 C 70 20 80 35 80 55 L 75 70 L 60 80 L 40 80 L 25 70 Z",
-  "abu-dhabi-2025": "M 35 20 L 65 20 C 75 20 80 30 80 40 L 80 60 C 80 70 75 80 65 80 L 35 80 C 25 80 20 70 20 60 L 20 40 C 20 30 25 20 35 20 Z",
+const TRACK_FILES: Record<string, string> = {
+  "australia-2025": "/tracks/australia.svg",
+  "china-2025": "/tracks/china.svg",
+  "japan-2025": "/tracks/japan.svg",
+  "bahrain-2025": "/tracks/bahrain.svg",
+  "saudi-arabia-2025": "/tracks/saudi-arabia.svg",
+  "miami-2025": "/tracks/miami.svg",
+  "emilia-romagna-2025": "/tracks/emilia-romagna.svg",
+  "monaco-2025": "/tracks/monaco.svg",
+  "spain-2025": "/tracks/spain.svg",
+  "canada-2025": "/tracks/canada.svg",
+  "austria-2025": "/tracks/austria.svg",
+  "great-britain-2025": "/tracks/great-britain.svg",
+  "belgium-2025": "/tracks/belgium.svg",
+  "hungary-2025": "/tracks/hungary.svg",
+  "netherlands-2025": "/tracks/netherlands.svg",
+  "italy-2025": "/tracks/italy.svg",
+  "azerbaijan-2025": "/tracks/azerbaijan.svg",
+  "singapore-2025": "/tracks/singapore.svg",
+  "usa-2025": "/tracks/usa.svg",
+  "mexico-2025": "/tracks/mexico.svg",
+  "brazil-2025": "/tracks/brazil.svg",
+  "las-vegas-2025": "/tracks/las-vegas.svg",
+  "qatar-2025": "/tracks/qatar.svg",
+  "abu-dhabi-2025": "/tracks/abu-dhabi.svg",
 };
 
-export function getTrackLayout(gpSlug: string): string | null {
-  return TRACK_LAYOUTS[gpSlug] ?? null;
+export function getTrackImage(gpSlug: string): string | null {
+  return TRACK_FILES[gpSlug] ?? null;
 }

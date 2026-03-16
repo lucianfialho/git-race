@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { CountdownTimer } from "./countdown-timer";
-import { getTrackLayout } from "@/lib/f1/track-layouts";
+import { getTrackImage } from "@/lib/f1/track-layouts";
 
 const COUNTRY_FLAGS: Record<string, string> = {
   AU: "\u{1F1E6}\u{1F1FA}", CN: "\u{1F1E8}\u{1F1F3}", JP: "\u{1F1EF}\u{1F1F5}",
@@ -66,7 +66,7 @@ export function GPHero({ gp, status }: GPHeroProps) {
   const config = STATUS_CONFIG[status] ?? STATUS_CONFIG.upcoming;
   const isLive = status === "qualifying" || status === "sprint" || status === "race_day";
   const flag = COUNTRY_FLAGS[gp.countryCode] ?? "";
-  const trackPath = getTrackLayout(gp.slug);
+  const trackImage = getTrackImage(gp.slug);
 
   const countdownTarget =
     status === "finished" ? null :
@@ -97,25 +97,14 @@ export function GPHero({ gp, status }: GPHeroProps) {
         }}
       />
 
-      {/* Track layout SVG — large, subtle, positioned right */}
-      {trackPath && (
-        <svg
-          className="absolute right-0 top-1/2 -translate-y-1/2 opacity-[0.06] pointer-events-none hidden md:block"
-          width="360"
-          height="360"
-          viewBox="0 0 100 100"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d={trackPath}
-            stroke={gp.themeColors.primary}
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            fill="none"
-          />
-        </svg>
+      {/* Track layout — real circuit SVG, positioned right */}
+      {trackImage && (
+        <img
+          src={trackImage}
+          alt={`${gp.circuit} track layout`}
+          className="absolute -right-4 top-1/2 -translate-y-1/2 pointer-events-none hidden md:block w-[380px] h-[380px] object-contain"
+          style={{ opacity: 0.1 }}
+        />
       )}
 
       <div className="max-w-4xl mx-auto px-4 py-10 md:py-16 relative">
