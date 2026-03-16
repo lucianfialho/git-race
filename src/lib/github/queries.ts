@@ -81,6 +81,13 @@ export const PROFILE_STATS_QUERY = gql`
       login
       followers { totalCount }
       following { totalCount }
+      organizations(first: 20) {
+        nodes {
+          login
+          name
+          avatarUrl
+        }
+      }
       repositories(first: 100, ownerAffiliations: OWNER, orderBy: { field: STARGAZERS, direction: DESC }) {
         totalCount
         nodes {
@@ -97,6 +104,13 @@ export interface ProfileStatsData {
     login: string;
     followers: { totalCount: number };
     following: { totalCount: number };
+    organizations: {
+      nodes: Array<{
+        login: string;
+        name: string | null;
+        avatarUrl: string;
+      }>;
+    };
     repositories: {
       totalCount: number;
       nodes: Array<{

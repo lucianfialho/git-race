@@ -134,12 +134,15 @@ export async function syncProfileStats(profile: Profile) {
       .slice(0, 5)
       .map(([name]) => name);
 
+    const organizations = data.viewer.organizations.nodes.map((org) => org.login);
+
     return {
       total_stars: totalStars,
       total_repos: data.viewer.repositories.totalCount,
       followers: data.viewer.followers.totalCount,
       following: data.viewer.following.totalCount,
       top_languages: topLanguages,
+      organizations,
     };
   } catch (error) {
     console.error(`Profile stats sync failed for ${profile.github_username}:`, error);

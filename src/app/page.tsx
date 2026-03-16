@@ -19,6 +19,37 @@ export default async function HomePage() {
     .from("profiles")
     .select("*", { count: "exact", head: true });
 
+  // Get all profiles with github_stats to extract org leaderboard
+  const { data: allProfiles } = await supabase
+    .from("profiles")
+    .select("github_username, avatar_url, total_points, github_stats")
+    .order("total_points", { ascending: false });
+
+  // Build org leaderboard: aggregate points by organization
+  const orgMap = new Map<string, { name: string; totalPoints: number; drivers: number; topDriver: string; topAvatar: string }>();
+  for (const p of allProfiles || []) {
+    const orgs: string[] = (p.github_stats as Record<string, unknown>)?.organizations as string[] ?? [];
+    for (const org of orgs) {
+      const existing = orgMap.get(org);
+      if (existing) {
+        existing.totalPoints += p.total_points || 0;
+        existing.drivers += 1;
+      } else {
+        orgMap.set(org, {
+          name: org,
+          totalPoints: p.total_points || 0,
+          drivers: 1,
+          topDriver: p.github_username,
+          topAvatar: p.avatar_url || "",
+        });
+      }
+    }
+  }
+  const topOrgs = Array.from(orgMap.values())
+    .filter((o) => o.drivers >= 1)
+    .sort((a, b) => b.totalPoints - a.totalPoints)
+    .slice(0, 8);
+
   return (
     <div className="min-h-screen bg-white">
       {/* GP Hero — dark, immersive, themed per GP */}
@@ -179,6 +210,51 @@ export default async function HomePage() {
                     <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#a3a3a3]">Points</p>
                   </div>
                 </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Organizations */}
+      {topOrgs.length > 0 && (
+        <section className="border-t border-[#e5e5e5]">
+          <div className="max-w-5xl mx-auto px-4 md:px-8 py-16">
+            <div className="flex items-baseline justify-between mb-8">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#e10600] mb-2">Constructors</p>
+                <h2 className="text-3xl font-bold uppercase tracking-tight text-[#0a0a0a]">Organizations</h2>
+              </div>
+              <Link href="/leaderboard" className="text-sm font-bold uppercase tracking-wider text-[#a3a3a3] hover:text-[#0a0a0a] transition-colors">
+                Full Table &rarr;
+              </Link>
+            </div>
+
+            <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0 snap-x snap-mandatory">
+              {topOrgs.map((org, i) => (
+                <div
+                  key={org.name}
+                  className="flex-shrink-0 w-[200px] rounded-sm border border-[#e5e5e5] overflow-hidden snap-start"
+                >
+                  <div className="h-1" style={{ background: i === 0 ? "#e10600" : "#e5e5e5" }} />
+                  <div className="p-4">
+                    <div className="flex items-center gap-3 mb-3">
+                      <img
+                        src={`https://github.com/${org.name}.png`}
+                        alt=""
+                        className="w-8 h-8 rounded"
+                      />
+                      <div className="min-w-0">
+                        <p className="text-[#0a0a0a] font-bold text-sm truncate">{org.name}</p>
+                        <p className="text-[#a3a3a3] text-xs">{org.drivers} driver{org.drivers !== 1 ? "s" : ""}</p>
+                      </div>
+                    </div>
+                    <p className="text-2xl font-black text-[#0a0a0a] tabular-nums">
+                      {org.totalPoints}
+                    </p>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#a3a3a3]">Combined Points</p>
+                  </div>
+                </div>
               ))}
             </div>
           </div>

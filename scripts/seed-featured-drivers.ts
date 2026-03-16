@@ -54,6 +54,19 @@ async function fetchGitHubUser(username: string): Promise<GitHubUser | null> {
   }
 }
 
+async function fetchUserOrgs(username: string): Promise<string[]> {
+  try {
+    const res = await fetch(`https://api.github.com/users/${username}/orgs`, {
+      headers: { "User-Agent": "GitRace-Seed" },
+    });
+    if (!res.ok) return [];
+    const orgs = await res.json();
+    return orgs.map((o: { login: string }) => o.login);
+  } catch {
+    return [];
+  }
+}
+
 async function fetchUserRepos(username: string): Promise<GitHubRepo[]> {
   try {
     const res = await fetch(
@@ -100,7 +113,10 @@ async function main() {
     const user = await fetchGitHubUser(username);
     if (!user) continue;
 
-    const repos = await fetchUserRepos(username);
+    const [repos, orgs] = await Promise.all([
+      fetchUserRepos(username),
+      fetchUserOrgs(username),
+    ]);
 
     const totalStars = repos.reduce((sum, r) => sum + r.stargazers_count, 0);
     const langCounts: Record<string, number> = {};
@@ -139,6 +155,7 @@ async function main() {
           followers: user.followers,
           following: user.following,
           top_languages: topLanguages,
+          organizations: orgs,
         },
       },
       { onConflict: "github_username" }
@@ -162,6 +179,7 @@ async function main() {
             followers: user.followers,
             following: user.following,
             top_languages: topLanguages,
+            organizations: orgs,
           },
         },
         { onConflict: "github_id" }
@@ -172,7 +190,8 @@ async function main() {
       }
     }
 
-    console.log(`  ✓ ${user.login} — ${totalStars.toLocaleString()} stars, ${user.followers.toLocaleString()} followers — OVR: ${Math.round((carStats.power_unit + carStats.aero + carStats.reliability + carStats.tire_mgmt + carStats.strategy) / 5)}`);
+    const ovr = Math.round((carStats.power_unit + carStats.aero + carStats.reliability + carStats.tire_mgmt + carStats.strategy) / 5);
+    console.log(`  ✓ ${user.login} — ${totalStars.toLocaleString()} stars, ${user.followers.toLocaleString()} followers, orgs: [${orgs.join(", ")}] — OVR: ${ovr}`);
     seeded++;
 
     // Rate limit: 60 req/hour unauthenticated, we make 2 per user
