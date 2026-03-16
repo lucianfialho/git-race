@@ -157,27 +157,30 @@ export default async function HomePage() {
               </Link>
             </div>
 
-            <div className="border border-[#e5e5e5] rounded-sm overflow-hidden divide-y divide-[#f0f0f0]">
+            <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0 snap-x snap-mandatory">
               {topDrivers.map((driver, i) => (
                 <Link
                   key={driver.github_username}
                   href={`/driver/${driver.github_username}`}
-                  className="flex items-center gap-4 px-5 py-4 hover:bg-[#fafafa] transition-colors group"
+                  className="flex-shrink-0 w-[180px] rounded-sm border border-[#e5e5e5] hover:border-[#d4d4d4] transition-colors group snap-start overflow-hidden"
                 >
-                  <span className={`text-2xl font-black w-8 tabular-nums ${i === 0 ? "text-[#0a0a0a]" : "text-[#d4d4d4]"}`}>
-                    {i + 1}
-                  </span>
-                  <div className="w-1 h-8 rounded-full bg-[#0a0a0a]" style={i === 0 ? { background: "#e10600" } : undefined} />
-                  <img
-                    src={driver.avatar_url || `https://github.com/${driver.github_username}.png`}
-                    alt=""
-                    className="w-9 h-9 rounded-full"
-                  />
-                  <span className="text-[#0a0a0a] font-bold text-sm group-hover:underline">{driver.github_username}</span>
-                  <span className="ml-auto font-bold text-lg tabular-nums text-[#0a0a0a]">
-                    {driver.total_points}
-                    <span className="text-[#a3a3a3] text-xs ml-1 font-normal">PTS</span>
-                  </span>
+                  {/* Top accent bar */}
+                  <div className="h-1" style={{ background: i === 0 ? "#e10600" : "#e5e5e5" }} />
+                  <div className="p-4 text-center">
+                    <span className={`text-xs font-bold uppercase tracking-[0.15em] ${i === 0 ? "text-[#e10600]" : "text-[#a3a3a3]"}`}>
+                      P{i + 1}
+                    </span>
+                    <img
+                      src={driver.avatar_url || `https://github.com/${driver.github_username}.png`}
+                      alt=""
+                      className="w-14 h-14 rounded-full mx-auto mt-3 group-hover:scale-105 transition-transform"
+                    />
+                    <p className="text-[#0a0a0a] font-bold text-sm mt-3 truncate">{driver.github_username}</p>
+                    <p className="text-2xl font-black text-[#0a0a0a] mt-1 tabular-nums">
+                      {driver.total_points}
+                    </p>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#a3a3a3]">Points</p>
+                  </div>
                 </Link>
               ))}
             </div>
