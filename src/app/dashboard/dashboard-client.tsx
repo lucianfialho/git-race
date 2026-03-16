@@ -131,7 +131,7 @@ export function DashboardClient({ profile, latestSnapshot, currentGP }: Dashboar
                   ))}
                 </div>
                 <p className="text-[#a3a3a3] text-xs mt-4 pt-4 border-t border-[#f0f0f0]">
-                  Synced {new Date(latestSnapshot.synced_at).toLocaleString()}
+                  Synced {new Date(latestSnapshot.synced_at).toISOString().replace("T", " ").slice(0, 16)} UTC
                 </p>
               </div>
             )}
