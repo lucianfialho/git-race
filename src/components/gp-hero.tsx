@@ -34,36 +34,23 @@ interface GPHeroProps {
   status: string;
 }
 
-const STATUS_CONFIG: Record<string, { label: string; sublabel: string; icon: string }> = {
-  qualifying: {
-    label: "QUALIFYING",
-    sublabel: "Session is live — contribute to improve your grid position",
-    icon: "\u{1F3CE}\u{FE0F}",
-  },
-  sprint: {
-    label: "SPRINT RACE",
-    sublabel: "Sprint weekend — shorter race, quick points",
-    icon: "\u{26A1}",
-  },
-  race_day: {
-    label: "RACE DAY",
-    sublabel: "Grand Prix day — lights out and away we go",
-    icon: "\u{1F3C1}",
-  },
-  upcoming: {
-    label: "NEXT RACE",
-    sublabel: "Qualifying opens when the race week begins",
-    icon: "\u{1F4C5}",
-  },
-  finished: {
-    label: "LATEST RESULT",
-    sublabel: "This Grand Prix has finished — check the results",
-    icon: "\u{1F3C1}",
-  },
+const STATUS_CTA: Record<string, string> = {
+  qualifying: "See Qualifying Grid",
+  sprint: "Sprint Results",
+  race_day: "Race in Progress",
+  finished: "Race Results",
+  upcoming: "Qualifying Schedule",
+};
+
+const STATUS_TIMER_LABEL: Record<string, string> = {
+  qualifying: "SESSION ENDS IN",
+  sprint: "RACE STARTS IN",
+  race_day: "RACE STARTS IN",
+  upcoming: "QUALIFYING OPENS IN",
+  finished: "RACE COMPLETE",
 };
 
 export function GPHero({ gp, status }: GPHeroProps) {
-  const config = STATUS_CONFIG[status] ?? STATUS_CONFIG.upcoming;
   const isLive = status === "qualifying" || status === "sprint" || status === "race_day";
   const flag = COUNTRY_FLAGS[gp.countryCode] ?? "";
   const trackImage = getTrackImage(gp.slug);
@@ -80,132 +67,111 @@ export function GPHero({ gp, status }: GPHeroProps) {
     : `/gp/${gp.slug}/qualifying`;
 
   return (
-    <section className="relative overflow-hidden">
-      {/* Colored top bar */}
+    <section className="relative overflow-hidden bg-[#0a0a0a] text-white">
+      {/* Country color accent — diagonal stripe */}
       <div
-        className="h-1.5"
+        className="absolute top-0 right-0 w-[600px] h-full pointer-events-none"
         style={{
-          background: `linear-gradient(90deg, ${gp.themeColors.primary} 0%, ${gp.themeColors.secondary} 50%, ${gp.themeColors.accent} 100%)`,
+          background: `linear-gradient(135deg, transparent 30%, ${gp.themeColors.primary}15 50%, ${gp.themeColors.primary}08 100%)`,
         }}
       />
 
-      {/* Background gradient wash — very subtle */}
-      <div
-        className="absolute inset-0 opacity-[0.04] pointer-events-none"
-        style={{
-          background: `radial-gradient(ellipse at 80% 20%, ${gp.themeColors.primary}, transparent 60%)`,
-        }}
-      />
-
-      {/* Track layout — real circuit SVG, positioned right */}
+      {/* Track layout — prominent, not hidden */}
       {trackImage && (
         <img
           src={trackImage}
-          alt={`${gp.circuit} track layout`}
-          className="absolute -right-4 top-1/2 -translate-y-1/2 pointer-events-none hidden md:block w-[380px] h-[380px] object-contain"
-          style={{ opacity: 0.1 }}
+          alt=""
+          className="absolute right-8 top-1/2 -translate-y-1/2 pointer-events-none hidden lg:block w-[320px] h-[320px] object-contain invert opacity-[0.07]"
         />
       )}
 
-      <div className="max-w-4xl mx-auto px-4 py-10 md:py-16 relative">
-        <div className="flex flex-col md:flex-row md:items-start justify-between gap-8">
-          {/* Left: GP info */}
-          <div className="flex-1">
-            {/* Status badge */}
-            <div className="flex items-center gap-3 mb-4">
-              {isLive && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-[#0a0a0a] text-white">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#e10600] animate-pulse" />
-                  {config.label}
+      {/* Thin accent bar at top */}
+      <div className="h-1" style={{ background: gp.themeColors.primary }} />
+
+      <div className="max-w-5xl mx-auto px-4 md:px-8 relative">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 py-10 md:py-14">
+          {/* Left: Race info */}
+          <div className="flex-1 min-w-0">
+            {/* Top line: status + round */}
+            <div className="flex items-center gap-3 mb-5">
+              {isLive ? (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.15em] bg-[#e10600] text-white rounded-sm">
+                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                  {status === "qualifying" ? "QUALIFYING" : status === "sprint" ? "SPRINT" : "RACE DAY"}
+                </span>
+              ) : (
+                <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/40">
+                  {status === "finished" ? "LATEST RESULT" : "NEXT RACE"}
                 </span>
               )}
-              {!isLive && (
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#a3a3a3]">
-                  {config.label}
-                </span>
-              )}
+              <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/30">
+                R{String(gp.round).padStart(2, "0")}/24
+              </span>
               {gp.hasSprint && status !== "sprint" && (
-                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[#f5f5f5] text-[#525252]">
-                  Sprint Weekend
+                <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/30 border border-white/20 px-2 py-0.5 rounded-sm">
+                  Sprint
                 </span>
               )}
             </div>
 
-            {/* Round + Flag */}
-            <div className="flex items-center gap-3 mb-1">
-              <span className="text-4xl">{flag}</span>
-              <span className="text-[#a3a3a3] text-sm font-semibold">Round {gp.round} of 24</span>
+            {/* GP Name — massive */}
+            <div className="flex items-start gap-4 mb-3">
+              <span className="text-4xl mt-1 hidden sm:block">{flag}</span>
+              <div>
+                <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold uppercase tracking-tight leading-[0.95]">
+                  {gp.name.replace(" Grand Prix", "")}
+                </h2>
+                <p className="text-sm font-bold uppercase tracking-[0.15em] text-white/30 mt-1">
+                  Grand Prix
+                </p>
+              </div>
             </div>
 
-            {/* GP Name */}
-            <h2 className="f1-heading text-3xl md:text-4xl text-[#0a0a0a] mt-2">
-              {gp.name}
-            </h2>
-            <p className="text-[#525252] mt-1">{gp.circuit}</p>
-            <p className="text-[#a3a3a3] text-sm mt-3">{config.sublabel}</p>
+            {/* Circuit */}
+            <p className="text-white/50 text-sm mb-6">{gp.circuit}</p>
 
-            {/* CTA */}
-            <div className="flex items-center gap-3 mt-6">
-              <Link href={linkHref} className="f1-btn f1-btn-primary rounded-lg text-sm">
-                {status === "qualifying" ? "See Qualifying Grid" :
-                 status === "sprint" ? "Sprint Results" :
-                 status === "race_day" ? "Race in Progress" :
-                 status === "finished" ? "Race Results" :
-                 "Qualifying Schedule"}
+            {/* CTAs */}
+            <div className="flex items-center gap-3">
+              <Link
+                href={linkHref}
+                className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-bold uppercase tracking-wider rounded-sm transition-colors"
+                style={{ background: gp.themeColors.primary, color: "#fff" }}
+              >
+                {STATUS_CTA[status] ?? "View Details"}
               </Link>
-              <Link href="/calendar" className="f1-btn f1-btn-secondary rounded-lg text-sm">
-                Full Calendar
+              <Link
+                href="/calendar"
+                className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-bold uppercase tracking-wider rounded-sm border border-white/20 text-white/70 hover:text-white hover:border-white/40 transition-colors"
+              >
+                Calendar
               </Link>
             </div>
           </div>
 
-          {/* Right: Countdown + session info */}
-          <div className="md:text-right shrink-0">
-            <div className="inline-block p-6 rounded-2xl border border-[#e5e5e5] bg-white/80 backdrop-blur-sm">
-              {status === "finished" && (
-                <div className="mb-1">
-                  <span className="text-2xl font-black text-[#0a0a0a]">Complete</span>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#a3a3a3] mt-1">Season 2025</p>
-                </div>
-              )}
-              {isLive && (
-                <div className="mb-3">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#a3a3a3]">
-                    {status === "qualifying" ? "Session ends in" : "Race starts in"}
-                  </span>
-                </div>
-              )}
-              {!isLive && status !== "finished" && (
-                <div className="mb-3">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#a3a3a3]">
-                    Qualifying starts in
-                  </span>
-                </div>
-              )}
-              {countdownTarget && <CountdownTimer targetDate={countdownTarget} />}
+          {/* Right: Countdown panel */}
+          <div className="shrink-0 w-full md:w-auto">
+            <div className="bg-white/[0.05] border border-white/10 rounded-sm p-5 md:p-6 backdrop-blur-sm md:min-w-[260px]">
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40 mb-3">
+                {STATUS_TIMER_LABEL[status] ?? "NEXT SESSION"}
+              </p>
 
-              {/* Race weekend schedule mini */}
-              <div className="mt-4 pt-4 border-t border-[#f0f0f0] space-y-1.5">
-                <ScheduleRow
-                  label="Qualifying"
-                  date={gp.dates.qualiStart}
-                  active={status === "qualifying"}
-                  done={status === "race_day" || status === "sprint" || status === "finished"}
-                />
+              {countdownTarget && (
+                <div className="mb-4">
+                  <CountdownTimer targetDate={countdownTarget} variant="dark" />
+                </div>
+              )}
+
+              {status === "finished" && (
+                <p className="text-xl font-bold text-white/60 mb-4">Season 2025</p>
+              )}
+
+              {/* Schedule */}
+              <div className="border-t border-white/10 pt-3 space-y-2">
+                <ScheduleRow label="Qualifying" date={gp.dates.qualiStart} active={status === "qualifying"} done={status === "race_day" || status === "sprint" || status === "finished"} />
                 {gp.hasSprint && gp.dates.sprintDate && (
-                  <ScheduleRow
-                    label="Sprint"
-                    date={gp.dates.sprintDate}
-                    active={status === "sprint"}
-                    done={status === "race_day" || status === "finished"}
-                  />
+                  <ScheduleRow label="Sprint" date={gp.dates.sprintDate} active={status === "sprint"} done={status === "race_day" || status === "finished"} />
                 )}
-                <ScheduleRow
-                  label="Grand Prix"
-                  date={gp.dates.raceDate}
-                  active={status === "race_day"}
-                  done={status === "finished"}
-                />
+                <ScheduleRow label="Grand Prix" date={gp.dates.raceDate} active={status === "race_day"} done={status === "finished"} />
               </div>
             </div>
           </div>
@@ -215,33 +181,15 @@ export function GPHero({ gp, status }: GPHeroProps) {
   );
 }
 
-function ScheduleRow({
-  label,
-  date,
-  active,
-  done,
-}: {
-  label: string;
-  date: string;
-  active: boolean;
-  done: boolean;
-}) {
+function ScheduleRow({ label, date, active, done }: { label: string; date: string; active: boolean; done: boolean }) {
   const d = new Date(date);
   const dayStr = d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 
   return (
     <div className="flex items-center gap-2 text-xs">
-      <span
-        className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-          active ? "bg-[#e10600] animate-pulse" :
-          done ? "bg-[#0a0a0a]" :
-          "bg-[#d4d4d4]"
-        }`}
-      />
-      <span className={`font-semibold ${active ? "text-[#0a0a0a]" : done ? "text-[#a3a3a3] line-through" : "text-[#525252]"}`}>
-        {label}
-      </span>
-      <span className="text-[#a3a3a3] ml-auto">{dayStr}</span>
+      <span className={`w-1 h-1 rounded-full shrink-0 ${active ? "bg-[#e10600] animate-pulse" : done ? "bg-white/40" : "bg-white/15"}`} />
+      <span className={`font-semibold ${active ? "text-white" : done ? "text-white/30 line-through" : "text-white/50"}`}>{label}</span>
+      <span className="text-white/20 ml-auto font-mono">{dayStr}</span>
     </div>
   );
 }
