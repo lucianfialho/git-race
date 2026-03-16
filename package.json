@@ -19,7 +19,7 @@
     "postprocessing": "^6.38.3",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "three": "^0.183.2"
+    "three": "^0.167.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -31,6 +31,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "jsdom": "^28.1.0",
+    "shadcn": "^4.0.8",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
     "typescript": "^5",
