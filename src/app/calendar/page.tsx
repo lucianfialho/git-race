@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { F1_2025_CALENDAR, getGPStatus, getNow } from "@/lib/f1/calendar";
+import { ALL_GPS, getGPStatus, getNow } from "@/lib/f1/calendar";
 
 const COUNTRY_FLAGS: Record<string, string> = {
   AU: "\u{1F1E6}\u{1F1FA}", CN: "\u{1F1E8}\u{1F1F3}", JP: "\u{1F1EF}\u{1F1F5}",
@@ -25,11 +25,11 @@ export default function CalendarPage() {
   return (
     <div className="min-h-screen bg-white">
       <div className="max-w-3xl mx-auto px-4 py-8">
-        <h1 className="f1-heading text-3xl text-[#0a0a0a] mb-1">2025 Calendar</h1>
-        <p className="text-[#a3a3a3] text-sm mb-8">24 Grand Prix following the real F1 schedule</p>
+        <h1 className="f1-heading text-3xl text-[#0a0a0a] mb-1">F1 Calendar</h1>
+        <p className="text-[#a3a3a3] text-sm mb-8">{ALL_GPS.length} Grand Prix across 2025–2026 seasons</p>
 
         <div className="space-y-2">
-          {F1_2025_CALENDAR.map((gp) => {
+          {ALL_GPS.map((gp) => {
             const status = getGPStatus(gp, now);
             const tag = STATUS_TAG[status];
             const isActive = status === "qualifying" || status === "sprint" || status === "race_day";

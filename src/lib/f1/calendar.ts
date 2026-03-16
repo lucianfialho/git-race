@@ -171,6 +171,144 @@ export const F1_2025_CALENDAR: GrandPrix[] = [
   },
 ];
 
+export const F1_2026_CALENDAR: GrandPrix[] = [
+  {
+    slug: "australia-2026", name: "Australian Grand Prix", country: "Australia", countryCode: "AU",
+    circuit: "Melbourne Grand Prix Circuit", round: 1, hasSprint: false,
+    dates: { qualiStart: "2026-03-02T00:00:00Z", qualiEnd: "2026-03-06T23:59:59Z", raceDate: "2026-03-08T05:00:00Z" },
+    themeColors: { primary: "#00843D", secondary: "#FFCD00", accent: "#002B7F", bg: "#0a1a0f" },
+  },
+  {
+    slug: "china-2026", name: "Chinese Grand Prix", country: "China", countryCode: "CN",
+    circuit: "Shanghai International Circuit", round: 2, hasSprint: false,
+    dates: { qualiStart: "2026-03-09T00:00:00Z", qualiEnd: "2026-03-13T23:59:59Z", raceDate: "2026-03-15T07:00:00Z" },
+    themeColors: { primary: "#DE2910", secondary: "#FFDE00", accent: "#DE2910", bg: "#1a0a0a" },
+  },
+  {
+    slug: "japan-2026", name: "Japanese Grand Prix", country: "Japan", countryCode: "JP",
+    circuit: "Suzuka International Racing Course", round: 3, hasSprint: false,
+    dates: { qualiStart: "2026-03-23T00:00:00Z", qualiEnd: "2026-03-27T23:59:59Z", raceDate: "2026-03-29T06:00:00Z" },
+    themeColors: { primary: "#BC002D", secondary: "#FFFFFF", accent: "#BC002D", bg: "#1a0a0f" },
+  },
+  {
+    slug: "miami-2026", name: "Miami Grand Prix", country: "United States", countryCode: "US",
+    circuit: "Miami International Autodrome", round: 4, hasSprint: true,
+    dates: { qualiStart: "2026-04-27T00:00:00Z", qualiEnd: "2026-05-01T23:59:59Z", sprintDate: "2026-05-02T20:00:00Z", raceDate: "2026-05-03T20:00:00Z" },
+    themeColors: { primary: "#F4C300", secondary: "#E8318A", accent: "#00B8D4", bg: "#0f1a1a" },
+  },
+  {
+    slug: "canada-2026", name: "Canadian Grand Prix", country: "Canada", countryCode: "CA",
+    circuit: "Circuit Gilles Villeneuve", round: 5, hasSprint: false,
+    dates: { qualiStart: "2026-05-18T00:00:00Z", qualiEnd: "2026-05-22T23:59:59Z", raceDate: "2026-05-24T18:00:00Z" },
+    themeColors: { primary: "#FF0000", secondary: "#FFFFFF", accent: "#FF0000", bg: "#1a0a0a" },
+  },
+  {
+    slug: "monaco-2026", name: "Monaco Grand Prix", country: "Monaco", countryCode: "MC",
+    circuit: "Circuit de Monte Carlo", round: 6, hasSprint: false,
+    dates: { qualiStart: "2026-06-01T00:00:00Z", qualiEnd: "2026-06-05T23:59:59Z", raceDate: "2026-06-07T13:00:00Z" },
+    themeColors: { primary: "#CE1126", secondary: "#FFFFFF", accent: "#CE1126", bg: "#1a0a0a" },
+  },
+  {
+    slug: "barcelona-2026", name: "Barcelona Grand Prix", country: "Spain", countryCode: "ES",
+    circuit: "Circuit de Barcelona-Catalunya", round: 7, hasSprint: false,
+    dates: { qualiStart: "2026-06-08T00:00:00Z", qualiEnd: "2026-06-12T23:59:59Z", raceDate: "2026-06-14T13:00:00Z" },
+    themeColors: { primary: "#AA151B", secondary: "#F1BF00", accent: "#AA151B", bg: "#1a0f0a" },
+  },
+  {
+    slug: "austria-2026", name: "Austrian Grand Prix", country: "Austria", countryCode: "AT",
+    circuit: "Red Bull Ring", round: 8, hasSprint: true,
+    dates: { qualiStart: "2026-06-22T00:00:00Z", qualiEnd: "2026-06-26T23:59:59Z", sprintDate: "2026-06-27T13:00:00Z", raceDate: "2026-06-28T13:00:00Z" },
+    themeColors: { primary: "#ED2939", secondary: "#FFFFFF", accent: "#ED2939", bg: "#1a0a0a" },
+  },
+  {
+    slug: "great-britain-2026", name: "British Grand Prix", country: "Great Britain", countryCode: "GB",
+    circuit: "Silverstone Circuit", round: 9, hasSprint: false,
+    dates: { qualiStart: "2026-06-29T00:00:00Z", qualiEnd: "2026-07-03T23:59:59Z", raceDate: "2026-07-05T14:00:00Z" },
+    themeColors: { primary: "#012169", secondary: "#C8102E", accent: "#FFFFFF", bg: "#0a0f1a" },
+  },
+  {
+    slug: "belgium-2026", name: "Belgian Grand Prix", country: "Belgium", countryCode: "BE",
+    circuit: "Circuit de Spa-Francorchamps", round: 10, hasSprint: false,
+    dates: { qualiStart: "2026-07-13T00:00:00Z", qualiEnd: "2026-07-17T23:59:59Z", raceDate: "2026-07-19T13:00:00Z" },
+    themeColors: { primary: "#000000", secondary: "#FDDA24", accent: "#EF3340", bg: "#1a1a0a" },
+  },
+  {
+    slug: "hungary-2026", name: "Hungarian Grand Prix", country: "Hungary", countryCode: "HU",
+    circuit: "Hungaroring", round: 11, hasSprint: false,
+    dates: { qualiStart: "2026-07-20T00:00:00Z", qualiEnd: "2026-07-24T23:59:59Z", raceDate: "2026-07-26T13:00:00Z" },
+    themeColors: { primary: "#CE2939", secondary: "#FFFFFF", accent: "#477050", bg: "#1a0a0a" },
+  },
+  {
+    slug: "netherlands-2026", name: "Dutch Grand Prix", country: "Netherlands", countryCode: "NL",
+    circuit: "Circuit Zandvoort", round: 12, hasSprint: false,
+    dates: { qualiStart: "2026-08-17T00:00:00Z", qualiEnd: "2026-08-21T23:59:59Z", raceDate: "2026-08-23T13:00:00Z" },
+    themeColors: { primary: "#FF6600", secondary: "#FFFFFF", accent: "#21468B", bg: "#1a0f0a" },
+  },
+  {
+    slug: "italy-2026", name: "Italian Grand Prix", country: "Italy", countryCode: "IT",
+    circuit: "Autodromo Nazionale di Monza", round: 13, hasSprint: false,
+    dates: { qualiStart: "2026-08-31T00:00:00Z", qualiEnd: "2026-09-04T23:59:59Z", raceDate: "2026-09-06T13:00:00Z" },
+    themeColors: { primary: "#008C45", secondary: "#CD212A", accent: "#FFFFFF", bg: "#0a1a0f" },
+  },
+  {
+    slug: "spain-madrid-2026", name: "Spanish Grand Prix", country: "Spain", countryCode: "ES",
+    circuit: "Circuito de Madrid", round: 14, hasSprint: false,
+    dates: { qualiStart: "2026-09-07T00:00:00Z", qualiEnd: "2026-09-11T23:59:59Z", raceDate: "2026-09-13T13:00:00Z" },
+    themeColors: { primary: "#AA151B", secondary: "#F1BF00", accent: "#AA151B", bg: "#1a0f0a" },
+  },
+  {
+    slug: "azerbaijan-2026", name: "Azerbaijan Grand Prix", country: "Azerbaijan", countryCode: "AZ",
+    circuit: "Baku City Circuit", round: 15, hasSprint: false,
+    dates: { qualiStart: "2026-09-21T00:00:00Z", qualiEnd: "2026-09-25T23:59:59Z", raceDate: "2026-09-26T11:00:00Z" },
+    themeColors: { primary: "#0092BC", secondary: "#E4002B", accent: "#00AF66", bg: "#0a1a1a" },
+  },
+  {
+    slug: "singapore-2026", name: "Singapore Grand Prix", country: "Singapore", countryCode: "SG",
+    circuit: "Marina Bay Street Circuit", round: 16, hasSprint: false,
+    dates: { qualiStart: "2026-10-05T00:00:00Z", qualiEnd: "2026-10-09T23:59:59Z", raceDate: "2026-10-11T12:00:00Z" },
+    themeColors: { primary: "#EF3340", secondary: "#FFFFFF", accent: "#EF3340", bg: "#1a0a0a" },
+  },
+  {
+    slug: "usa-2026", name: "United States Grand Prix", country: "United States", countryCode: "US",
+    circuit: "Circuit of the Americas", round: 17, hasSprint: true,
+    dates: { qualiStart: "2026-10-19T00:00:00Z", qualiEnd: "2026-10-23T23:59:59Z", sprintDate: "2026-10-24T19:00:00Z", raceDate: "2026-10-25T19:00:00Z" },
+    themeColors: { primary: "#B31942", secondary: "#0A3161", accent: "#FFFFFF", bg: "#0f0a1a" },
+  },
+  {
+    slug: "mexico-2026", name: "Mexico City Grand Prix", country: "Mexico", countryCode: "MX",
+    circuit: "Autodromo Hermanos Rodriguez", round: 18, hasSprint: false,
+    dates: { qualiStart: "2026-10-26T00:00:00Z", qualiEnd: "2026-10-30T23:59:59Z", raceDate: "2026-11-01T20:00:00Z" },
+    themeColors: { primary: "#006847", secondary: "#CE1126", accent: "#FFFFFF", bg: "#0a1a0f" },
+  },
+  {
+    slug: "brazil-2026", name: "Sao Paulo Grand Prix", country: "Brazil", countryCode: "BR",
+    circuit: "Autodromo Jose Carlos Pace", round: 19, hasSprint: true,
+    dates: { qualiStart: "2026-11-02T00:00:00Z", qualiEnd: "2026-11-06T23:59:59Z", sprintDate: "2026-11-07T17:00:00Z", raceDate: "2026-11-08T17:00:00Z" },
+    themeColors: { primary: "#009739", secondary: "#FEDD00", accent: "#002776", bg: "#0a1a0f" },
+  },
+  {
+    slug: "las-vegas-2026", name: "Las Vegas Grand Prix", country: "United States", countryCode: "US",
+    circuit: "Las Vegas Strip Circuit", round: 20, hasSprint: false,
+    dates: { qualiStart: "2026-11-16T00:00:00Z", qualiEnd: "2026-11-20T23:59:59Z", raceDate: "2026-11-21T06:00:00Z" },
+    themeColors: { primary: "#FFD700", secondary: "#000000", accent: "#FF1493", bg: "#1a1a0a" },
+  },
+  {
+    slug: "qatar-2026", name: "Qatar Grand Prix", country: "Qatar", countryCode: "QA",
+    circuit: "Lusail International Circuit", round: 21, hasSprint: true,
+    dates: { qualiStart: "2026-11-23T00:00:00Z", qualiEnd: "2026-11-27T23:59:59Z", sprintDate: "2026-11-28T16:00:00Z", raceDate: "2026-11-29T16:00:00Z" },
+    themeColors: { primary: "#8A1538", secondary: "#FFFFFF", accent: "#8A1538", bg: "#1a0a0f" },
+  },
+  {
+    slug: "abu-dhabi-2026", name: "Abu Dhabi Grand Prix", country: "United Arab Emirates", countryCode: "AE",
+    circuit: "Yas Marina Circuit", round: 22, hasSprint: false,
+    dates: { qualiStart: "2026-11-30T00:00:00Z", qualiEnd: "2026-12-04T23:59:59Z", raceDate: "2026-12-06T13:00:00Z" },
+    themeColors: { primary: "#00732F", secondary: "#FFFFFF", accent: "#FF0000", bg: "#0a1a0f" },
+  },
+];
+
+// Combined calendar — all GPs across seasons
+export const ALL_GPS: GrandPrix[] = [...F1_2025_CALENDAR, ...F1_2026_CALENDAR];
+
 // Demo date override for development — set NEXT_PUBLIC_DEMO_DATE in .env.local
 // Example: NEXT_PUBLIC_DEMO_DATE=2025-07-30T12:00:00Z (Hungarian GP qualifying)
 export function getNow(): Date {
@@ -208,7 +346,7 @@ export function getGPStatus(gp: GrandPrix, now: Date = getNow()): GPStatus {
 
 export function getCurrentGP(now: Date = getNow()): GrandPrix | null {
   // Find a GP that is currently active (qualifying, sprint, or race day)
-  for (const gp of F1_2025_CALENDAR) {
+  for (const gp of ALL_GPS) {
     const status = getGPStatus(gp, now);
     if (status === "qualifying" || status === "sprint" || status === "race_day") {
       return gp;
@@ -218,7 +356,7 @@ export function getCurrentGP(now: Date = getNow()): GrandPrix | null {
 }
 
 export function getNextGP(now: Date = getNow()): GrandPrix | null {
-  for (const gp of F1_2025_CALENDAR) {
+  for (const gp of ALL_GPS) {
     const status = getGPStatus(gp, now);
     if (status === "upcoming") return gp;
     if (status === "qualifying" || status === "sprint" || status === "race_day") return gp;
@@ -235,18 +373,18 @@ export function getMostRelevantGP(now: Date = getNow()): GrandPrix | null {
   if (next) return next;
 
   // Off-season or all GPs finished — return last GP
-  for (let i = F1_2025_CALENDAR.length - 1; i >= 0; i--) {
-    if (getGPStatus(F1_2025_CALENDAR[i], now) === "finished") {
-      return F1_2025_CALENDAR[i];
+  for (let i = ALL_GPS.length - 1; i >= 0; i--) {
+    if (getGPStatus(ALL_GPS[i], now) === "finished") {
+      return ALL_GPS[i];
     }
   }
 
   // Fallback: first GP (pre-season)
-  return F1_2025_CALENDAR[0] ?? null;
+  return ALL_GPS[0] ?? null;
 }
 
 export function getGPBySlug(slug: string): GrandPrix | null {
-  return F1_2025_CALENDAR.find((gp) => gp.slug === slug) ?? null;
+  return ALL_GPS.find((gp) => gp.slug === slug) ?? null;
 }
 
 export function isQualifyingActive(gp: GrandPrix, now: Date = getNow()): boolean {

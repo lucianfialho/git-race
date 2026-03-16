@@ -28,6 +28,32 @@ const TRACK_FILES: Record<string, string> = {
   "abu-dhabi-2025": "/tracks/abu-dhabi.svg",
 };
 
+// 2026 reuse same track SVGs (same circuits)
+const TRACK_2026: Record<string, string> = {
+  "australia-2026": "/tracks/australia.svg",
+  "china-2026": "/tracks/china.svg",
+  "japan-2026": "/tracks/japan.svg",
+  "miami-2026": "/tracks/miami.svg",
+  "canada-2026": "/tracks/canada.svg",
+  "monaco-2026": "/tracks/monaco.svg",
+  "barcelona-2026": "/tracks/spain.svg",
+  "austria-2026": "/tracks/austria.svg",
+  "great-britain-2026": "/tracks/great-britain.svg",
+  "belgium-2026": "/tracks/belgium.svg",
+  "hungary-2026": "/tracks/hungary.svg",
+  "netherlands-2026": "/tracks/netherlands.svg",
+  "italy-2026": "/tracks/italy.svg",
+  "spain-madrid-2026": "/tracks/spain.svg",
+  "azerbaijan-2026": "/tracks/azerbaijan.svg",
+  "singapore-2026": "/tracks/singapore.svg",
+  "usa-2026": "/tracks/usa.svg",
+  "mexico-2026": "/tracks/mexico.svg",
+  "brazil-2026": "/tracks/brazil.svg",
+  "las-vegas-2026": "/tracks/las-vegas.svg",
+  "qatar-2026": "/tracks/qatar.svg",
+  "abu-dhabi-2026": "/tracks/abu-dhabi.svg",
+};
+
 export function getTrackImage(gpSlug: string): string | null {
-  return TRACK_FILES[gpSlug] ?? null;
+  return TRACK_FILES[gpSlug] ?? TRACK_2026[gpSlug] ?? null;
 }

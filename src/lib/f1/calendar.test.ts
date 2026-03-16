@@ -7,6 +7,8 @@ import {
   isQualifyingActive,
   isRaceDay,
   F1_2025_CALENDAR,
+  F1_2026_CALENDAR,
+  ALL_GPS,
 } from "./calendar";
 
 describe("getGPStatus", () => {
@@ -75,9 +77,16 @@ describe("getNextGP", () => {
     expect(gp!.slug).toBe("australia-2025");
   });
 
+  it("returns 2026 GP after 2025 season ends", () => {
+    const afterSeason2025 = new Date("2025-12-08T00:00:00Z");
+    const gp = getNextGP(afterSeason2025);
+    expect(gp).not.toBeNull();
+    expect(gp!.slug).toContain("2026");
+  });
+
   it("returns null after all GPs finished", () => {
-    const afterSeason = new Date("2025-12-08T00:00:00Z");
-    const gp = getNextGP(afterSeason);
+    const afterAll = new Date("2027-01-01T00:00:00Z");
+    const gp = getNextGP(afterAll);
     expect(gp).toBeNull();
   });
 });
@@ -139,5 +148,34 @@ describe("F1_2025_CALENDAR", () => {
       expect(gp.themeColors.primary).toBeTruthy();
       expect(gp.themeColors.secondary).toBeTruthy();
     });
+  });
+});
+
+describe("F1_2026_CALENDAR", () => {
+  it("has 22 GPs", () => {
+    expect(F1_2026_CALENDAR).toHaveLength(22);
+  });
+
+  it("rounds are sequential 1-22", () => {
+    F1_2026_CALENDAR.forEach((gp, i) => {
+      expect(gp.round).toBe(i + 1);
+    });
+  });
+
+  it("all GPs have theme colors", () => {
+    F1_2026_CALENDAR.forEach((gp) => {
+      expect(gp.themeColors.primary).toBeTruthy();
+    });
+  });
+});
+
+describe("ALL_GPS", () => {
+  it("has 46 GPs total (24 + 22)", () => {
+    expect(ALL_GPS).toHaveLength(46);
+  });
+
+  it("all have unique slugs", () => {
+    const slugs = ALL_GPS.map((gp) => gp.slug);
+    expect(new Set(slugs).size).toBe(slugs.length);
   });
 });
