@@ -18,166 +18,198 @@ interface Org {
   name: string;
   totalPoints: number;
   drivers: number;
-  members: string[];
+  members: Array<{ avatar: string; username: string }>;
 }
 
-export function LeaderboardTabs({ drivers, orgs }: { drivers: Driver[]; orgs: Org[] }) {
+export function LeaderboardTabs({ drivers, orgs, leaderPoints }: { drivers: Driver[]; orgs: Org[]; leaderPoints: number }) {
   const [tab, setTab] = useState<"drivers" | "constructors">("drivers");
 
-  const top3 = drivers.slice(0, 3);
+  const orgLeaderPoints = orgs[0]?.totalPoints || 1;
 
   return (
     <>
       {/* Tabs */}
-      <div className="flex gap-1 mb-8 border border-[#e5e5e5] rounded-sm p-1 w-fit">
-        <button
-          onClick={() => setTab("drivers")}
-          className={`px-4 py-2 text-sm font-bold uppercase tracking-wider rounded-sm transition-colors ${
-            tab === "drivers" ? "bg-[#0a0a0a] text-white" : "text-[#a3a3a3] hover:text-[#0a0a0a]"
-          }`}
-        >
-          Drivers
-        </button>
-        <button
-          onClick={() => setTab("constructors")}
-          className={`px-4 py-2 text-sm font-bold uppercase tracking-wider rounded-sm transition-colors ${
-            tab === "constructors" ? "bg-[#0a0a0a] text-white" : "text-[#a3a3a3] hover:text-[#0a0a0a]"
-          }`}
-        >
-          Constructors
-        </button>
+      <div className="flex gap-0 mb-6 border-b border-[#e5e5e5]">
+        {(["drivers", "constructors"] as const).map((t) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={`px-5 py-3 text-[11px] font-bold uppercase tracking-[0.15em] transition-colors border-b-2 -mb-px ${
+              tab === t
+                ? "border-[#e10600] text-[#0a0a0a]"
+                : "border-transparent text-[#a3a3a3] hover:text-[#525252]"
+            }`}
+          >
+            {t === "drivers" ? "Drivers" : "Constructors"}
+          </button>
+        ))}
       </div>
 
       {tab === "drivers" && (
-        <>
-          {/* Podium */}
-          {top3.length >= 3 && (
-            <div className="flex items-end justify-center gap-6 mb-10 pt-4">
-              {[
-                { entry: top3[1], pos: "P2", h: "h-24", order: 1 },
-                { entry: top3[0], pos: "P1", h: "h-32", order: 2 },
-                { entry: top3[2], pos: "P3", h: "h-16", order: 3 },
-              ].map(({ entry, pos, h, order }) => (
-                <Link
-                  key={pos}
-                  href={`/driver/${entry.username}`}
-                  className="flex flex-col items-center group"
-                  style={{ order }}
-                >
-                  <img
-                    src={entry.avatarUrl || `https://github.com/${entry.username}.png`}
-                    alt=""
-                    className="w-12 h-12 rounded-full mb-1 group-hover:scale-105 transition-transform"
-                  />
-                  <span className="text-[#0a0a0a] text-sm font-bold">{entry.username}</span>
-                  <span className="text-[#a3a3a3] text-xs">{entry.totalPoints} pts</span>
-                  <span className="text-xs font-bold text-[#a3a3a3] mt-1">{pos}</span>
-                  <div className={`w-20 ${h} rounded-t-lg mt-1 ${pos === "P1" ? "bg-[#0a0a0a]" : "bg-[#e5e5e5]"}`} />
-                </Link>
-              ))}
+        <div>
+          {drivers.length > 0 ? (
+            <div className="space-y-0">
+              {drivers.map((entry, i) => {
+                const barWidth = leaderPoints > 0 ? (entry.totalPoints / leaderPoints) * 100 : 0;
+                const isTop3 = entry.position <= 3;
+
+                return (
+                  <Link
+                    key={entry.profileId}
+                    href={`/driver/${entry.username}`}
+                    className="group flex items-center gap-0 border-b border-[#f0f0f0] last:border-0 hover:bg-[#fafafa] transition-colors"
+                  >
+                    {/* Position */}
+                    <div className="w-14 shrink-0 text-center py-4">
+                      <span className={`text-lg font-black tabular-nums ${isTop3 ? "text-[#0a0a0a]" : "text-[#d4d4d4]"}`}>
+                        {String(entry.position).padStart(2, "0")}
+                      </span>
+                    </div>
+
+                    {/* Accent stripe */}
+                    <div
+                      className="w-1 self-stretch shrink-0 rounded-sm"
+                      style={{ background: entry.position === 1 ? "#e10600" : entry.position <= 3 ? "#0a0a0a" : "#f0f0f0" }}
+                    />
+
+                    {/* Driver info */}
+                    <div className="flex items-center gap-3 px-4 py-4 flex-1 min-w-0">
+                      <img
+                        src={entry.avatarUrl || `https://github.com/${entry.username}.png`}
+                        alt=""
+                        className="w-8 h-8 rounded-full shrink-0 group-hover:scale-105 transition-transform"
+                      />
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-[#0a0a0a] truncate">{entry.username}</p>
+                        <p className="text-[10px] text-[#a3a3a3] font-mono">#{entry.carNumber}</p>
+                      </div>
+                    </div>
+
+                    {/* Points bar */}
+                    <div className="hidden md:flex items-center gap-3 w-48 shrink-0 pr-2">
+                      <div className="flex-1 h-1.5 bg-[#f0f0f0] rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{
+                            width: `${barWidth}%`,
+                            background: entry.position === 1 ? "#e10600" : "#0a0a0a",
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Stats */}
+                    <div className="hidden sm:flex items-center gap-4 shrink-0 pr-2">
+                      <div className="text-center w-10">
+                        <p className="text-xs font-bold text-[#0a0a0a] tabular-nums">{entry.wins}</p>
+                        <p className="text-[8px] uppercase tracking-wider text-[#a3a3a3]">Win</p>
+                      </div>
+                      <div className="text-center w-10">
+                        <p className="text-xs font-bold text-[#0a0a0a] tabular-nums">{entry.podiums}</p>
+                        <p className="text-[8px] uppercase tracking-wider text-[#a3a3a3]">Pod</p>
+                      </div>
+                    </div>
+
+                    {/* Points */}
+                    <div className="w-20 shrink-0 text-right pr-4 py-4">
+                      <p className={`text-lg font-black tabular-nums ${isTop3 ? "text-[#0a0a0a]" : "text-[#525252]"}`}>
+                        {entry.totalPoints}
+                      </p>
+                      <p className="text-[8px] uppercase tracking-wider text-[#a3a3a3]">Pts</p>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-16">
+              <p className="text-[#a3a3a3] text-sm">No drivers yet.</p>
+              <Link href="/login" className="text-[#e10600] text-sm font-bold hover:underline mt-2 inline-block">
+                Be the first to race
+              </Link>
             </div>
           )}
-
-          {/* Driver Table */}
-          <div className="rounded-sm border border-[#e5e5e5] overflow-hidden">
-            {drivers.length > 0 ? (
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-[#e5e5e5] text-[#a3a3a3] text-[10px] uppercase tracking-[0.15em]">
-                    <th className="text-left py-3 px-4 w-12 font-semibold">Pos</th>
-                    <th className="text-left py-3 px-4 font-semibold">Driver</th>
-                    <th className="text-right py-3 px-4 w-20 font-semibold">Points</th>
-                    <th className="text-right py-3 px-4 w-16 font-semibold hidden sm:table-cell">Wins</th>
-                    <th className="text-right py-3 px-4 w-20 font-semibold hidden sm:table-cell">Podiums</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {drivers.map((entry) => (
-                    <tr key={entry.profileId} className="border-b border-[#f5f5f5] last:border-0 hover:bg-[#fafafa] transition-colors">
-                      <td className="py-3 px-4">
-                        <span className={`font-black ${entry.position <= 3 ? "text-[#0a0a0a]" : "text-[#a3a3a3]"}`}>
-                          {entry.position}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <Link href={`/driver/${entry.username}`} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-                          <div className="w-1 h-6 rounded-full" style={{ background: entry.position === 1 ? "#e10600" : "#e5e5e5" }} />
-                          <img src={entry.avatarUrl || `https://github.com/${entry.username}.png`} alt="" className="w-8 h-8 rounded-full" />
-                          <div>
-                            <span className="text-[#0a0a0a] font-bold text-sm">{entry.username}</span>
-                            <span className="text-[#a3a3a3] font-mono text-xs ml-2">#{entry.carNumber}</span>
-                          </div>
-                        </Link>
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <span className="text-[#0a0a0a] font-bold tabular-nums">{entry.totalPoints}</span>
-                      </td>
-                      <td className="py-3 px-4 text-right text-[#525252] hidden sm:table-cell">{entry.wins}</td>
-                      <td className="py-3 px-4 text-right text-[#525252] hidden sm:table-cell">{entry.podiums}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <div className="text-center py-12 text-[#a3a3a3]">
-                No drivers yet.{" "}
-                <Link href="/login" className="text-[#e10600] font-semibold hover:underline">Be the first!</Link>
-              </div>
-            )}
-          </div>
-        </>
+        </div>
       )}
 
       {tab === "constructors" && (
-        <div className="rounded-sm border border-[#e5e5e5] overflow-hidden">
+        <div>
           {orgs.length > 0 ? (
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-[#e5e5e5] text-[#a3a3a3] text-[10px] uppercase tracking-[0.15em]">
-                  <th className="text-left py-3 px-4 w-12 font-semibold">Pos</th>
-                  <th className="text-left py-3 px-4 font-semibold">Organization</th>
-                  <th className="text-right py-3 px-4 w-20 font-semibold">Points</th>
-                  <th className="text-right py-3 px-4 w-20 font-semibold hidden sm:table-cell">Drivers</th>
-                </tr>
-              </thead>
-              <tbody>
-                {orgs.map((org, i) => (
-                  <tr key={org.name} className="border-b border-[#f5f5f5] last:border-0 hover:bg-[#fafafa] transition-colors">
-                    <td className="py-3 px-4">
-                      <span className={`font-black ${i < 3 ? "text-[#0a0a0a]" : "text-[#a3a3a3]"}`}>
-                        {i + 1}
+            <div className="space-y-0">
+              {orgs.map((org, i) => {
+                const barWidth = orgLeaderPoints > 0 ? (org.totalPoints / orgLeaderPoints) * 100 : 0;
+                const isTop3 = i < 3;
+
+                return (
+                  <div
+                    key={org.name}
+                    className="flex items-center gap-0 border-b border-[#f0f0f0] last:border-0 hover:bg-[#fafafa] transition-colors"
+                  >
+                    {/* Position */}
+                    <div className="w-14 shrink-0 text-center py-4">
+                      <span className={`text-lg font-black tabular-nums ${isTop3 ? "text-[#0a0a0a]" : "text-[#d4d4d4]"}`}>
+                        {String(i + 1).padStart(2, "0")}
                       </span>
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-1 h-6 rounded-full" style={{ background: i === 0 ? "#e10600" : "#e5e5e5" }} />
-                        <img
-                          src={`https://github.com/${org.name}.png`}
-                          alt=""
-                          className="w-8 h-8 rounded"
-                        />
-                        <div>
-                          <span className="text-[#0a0a0a] font-bold text-sm">{org.name}</span>
-                        </div>
-                        {/* Member avatars */}
-                        <div className="flex -space-x-1.5 ml-2">
-                          {org.members.slice(0, 3).map((avatar, j) => (
-                            <img key={j} src={avatar || ""} alt="" className="w-5 h-5 rounded-full border border-white" />
-                          ))}
-                        </div>
+                    </div>
+
+                    {/* Accent stripe */}
+                    <div
+                      className="w-1 self-stretch shrink-0 rounded-sm"
+                      style={{ background: i === 0 ? "#e10600" : i < 3 ? "#0a0a0a" : "#f0f0f0" }}
+                    />
+
+                    {/* Org info */}
+                    <div className="flex items-center gap-3 px-4 py-4 flex-1 min-w-0">
+                      <img
+                        src={`https://github.com/${org.name}.png`}
+                        alt=""
+                        className="w-8 h-8 rounded shrink-0"
+                      />
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-[#0a0a0a] truncate">{org.name}</p>
+                        <p className="text-[10px] text-[#a3a3a3]">{org.drivers} driver{org.drivers !== 1 ? "s" : ""}</p>
                       </div>
-                    </td>
-                    <td className="py-3 px-4 text-right">
-                      <span className="text-[#0a0a0a] font-bold tabular-nums">{org.totalPoints}</span>
-                    </td>
-                    <td className="py-3 px-4 text-right text-[#525252] hidden sm:table-cell">{org.drivers}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      {/* Member avatars */}
+                      <div className="hidden sm:flex -space-x-2 ml-1">
+                        {org.members.slice(0, 4).map((m, j) => (
+                          <img
+                            key={j}
+                            src={m.avatar || `https://github.com/${m.username}.png`}
+                            alt=""
+                            className="w-5 h-5 rounded-full border-2 border-white"
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Points bar */}
+                    <div className="hidden md:flex items-center gap-3 w-48 shrink-0 pr-2">
+                      <div className="flex-1 h-1.5 bg-[#f0f0f0] rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{
+                            width: `${barWidth}%`,
+                            background: i === 0 ? "#e10600" : "#0a0a0a",
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Points */}
+                    <div className="w-20 shrink-0 text-right pr-4 py-4">
+                      <p className={`text-lg font-black tabular-nums ${isTop3 ? "text-[#0a0a0a]" : "text-[#525252]"}`}>
+                        {org.totalPoints}
+                      </p>
+                      <p className="text-[8px] uppercase tracking-wider text-[#a3a3a3]">Pts</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           ) : (
-            <div className="text-center py-12 text-[#a3a3a3]">
-              No organizations yet. Sign in and your GitHub orgs will appear here.
+            <div className="text-center py-16">
+              <p className="text-[#a3a3a3] text-sm">No organizations yet.</p>
+              <p className="text-[#525252] text-xs mt-1">Sign in and your GitHub orgs will appear here.</p>
             </div>
           )}
         </div>
