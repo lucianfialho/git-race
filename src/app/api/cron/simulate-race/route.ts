@@ -24,7 +24,44 @@ export async function GET(request: Request) {
       return NextResponse.json({ message: `GP ${gp.name} is not race day (status: ${status})` });
     }
 
+    // Check if race/sprint already simulated
+    const existingSnap = await loadSnapshotAdmin(gp.slug);
+    if (existingSnap?.race_data) {
+      // For sprint status, we check if sprint results already exist in race_results
+      // For race status, we check if race_data snapshot exists
+      if (status === "race_day") {
+        return NextResponse.json({
+          message: `Race already simulated for ${gp.name}`,
+        });
+      }
+      // For sprint, we still allow — sprint data is stored as race_results with is_sprint=true
+      // but race_data snapshot covers the main race only
+    }
+
     const admin = createAdminClient();
+
+    // For sprint, check if sprint results already exist
+    if (status === "sprint") {
+      const { data: gpRecord } = await admin
+        .from("grand_prix")
+        .select("id")
+        .eq("slug", gp.slug)
+        .single();
+
+      if (gpRecord) {
+        const { count } = await admin
+          .from("race_results")
+          .select("id", { count: "exact", head: true })
+          .eq("gp_id", gpRecord.id)
+          .eq("is_sprint", true);
+
+        if (count && count > 0) {
+          return NextResponse.json({
+            message: `Race already simulated for ${gp.name}`,
+          });
+        }
+      }
+    }
 
     // Get all profiles with car_stats
     const { data: profiles } = await admin

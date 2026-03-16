@@ -46,6 +46,34 @@ export async function GET(request: Request) {
         }
       }
 
+      // Assign default F3 division if the user doesn't have one yet
+      try {
+        const { data: currentProfile } = await admin
+          .from("profiles")
+          .select("division_id")
+          .eq("id", user.id)
+          .single();
+
+        if (currentProfile && !currentProfile.division_id) {
+          // Find the F3 division (level 1) for the active season
+          const { data: f3Division } = await admin
+            .from("divisions")
+            .select("id")
+            .eq("level", 1)
+            .limit(1)
+            .single();
+
+          if (f3Division) {
+            await admin
+              .from("profiles")
+              .update({ division_id: f3Division.id })
+              .eq("id", user.id);
+          }
+        }
+      } catch {
+        // divisions table may not exist yet — skip gracefully
+      }
+
       return NextResponse.redirect(`${origin}${next}`);
     }
 

@@ -2,6 +2,9 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { DashboardClient } from "./dashboard-client";
 import { getCurrentGP, getNextGP, getGPStatus, getNow } from "@/lib/f1/calendar";
+import { detectRivals } from "@/lib/race/rivalries";
+import type { StandingEntry } from "@/lib/race/rivalries";
+import { getDivisionFromPoints } from "@/lib/race/divisions";
 
 export const metadata = {
   title: "Dashboard - GitRace Manager",
@@ -37,6 +40,49 @@ export default async function DashboardPage() {
   const currentGP = getCurrentGP(now) ?? getNextGP(now);
   const gpStatus = currentGP ? getGPStatus(currentGP, now) : null;
 
+  // Fetch all profiles for rivalry detection
+  const { data: allProfiles } = await supabase
+    .from("profiles")
+    .select("id, github_username, avatar_url, total_points")
+    .order("total_points", { ascending: false });
+
+  const standings: StandingEntry[] = (allProfiles ?? []).map((p, i) => ({
+    profileId: p.id,
+    name: p.github_username,
+    points: p.total_points ?? 0,
+    position: i + 1,
+    isBot: false,
+  }));
+
+  const rivalIds = detectRivals(profile.id, standings);
+  const rivals = rivalIds
+    .map((id) => {
+      const entry = standings.find((s) => s.profileId === id);
+      const prof = allProfiles?.find((p) => p.id === id);
+      if (!entry || !prof) return null;
+      const myEntry = standings.find((s) => s.profileId === profile.id);
+      const diff = (myEntry?.points ?? 0) - entry.points;
+      return {
+        id: prof.id,
+        username: prof.github_username,
+        avatar_url: prof.avatar_url,
+        points: entry.points,
+        position: entry.position,
+        pointsDiff: diff,
+      };
+    })
+    .filter(Boolean) as Array<{
+    id: string;
+    username: string;
+    avatar_url: string | null;
+    points: number;
+    position: number;
+    pointsDiff: number;
+  }>;
+
+  // Division from points
+  const division = getDivisionFromPoints(profile.total_points ?? 0);
+
   // Parse car_stats safely
   const carStats = profile.car_stats ?? {
     power_unit: 0,
@@ -57,7 +103,10 @@ export default async function DashboardPage() {
         total_points: profile.total_points,
         car_stats: carStats,
         github_stats: profile.github_stats ?? null,
+        division: division.name,
+        divisionLevel: division.level,
       }}
+      rivals={rivals}
       latestSnapshot={latestSnapshot}
       currentGP={currentGP ? {
         name: currentGP.name,

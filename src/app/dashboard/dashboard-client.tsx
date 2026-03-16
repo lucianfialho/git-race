@@ -6,6 +6,15 @@ import Link from "next/link";
 import type { CarStats } from "@/lib/race/car-components";
 import { CarStatsDisplay } from "@/components/dashboard/car-stats";
 
+interface RivalData {
+  id: string;
+  username: string;
+  avatar_url: string | null;
+  points: number;
+  position: number;
+  pointsDiff: number;
+}
+
 interface DashboardClientProps {
   profile: {
     id: string;
@@ -22,7 +31,10 @@ interface DashboardClientProps {
       following?: number;
       top_languages?: string[];
     } | null;
+    division: string;
+    divisionLevel: number;
   };
+  rivals: RivalData[];
   latestSnapshot: {
     commits_count: number;
     prs_opened: number;
@@ -52,7 +64,7 @@ interface DashboardClientProps {
   } | null;
 }
 
-export function DashboardClient({ profile, latestSnapshot, currentGP }: DashboardClientProps) {
+export function DashboardClient({ profile, rivals, latestSnapshot, currentGP }: DashboardClientProps) {
   const router = useRouter();
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState("");
@@ -78,6 +90,13 @@ export function DashboardClient({ profile, latestSnapshot, currentGP }: Dashboar
 
   const isLive = currentGP?.status === "qualifying" || currentGP?.status === "sprint" || currentGP?.status === "race_day";
 
+  const DIVISION_BADGE_CLASS: Record<number, string> = {
+    1: "bg-[#f0f0f0] text-[#525252]",
+    2: "bg-[#0a0a0a] text-white",
+    3: "bg-[#e10600] text-white",
+  };
+  const badgeClass = DIVISION_BADGE_CLASS[profile.divisionLevel] ?? DIVISION_BADGE_CLASS[1];
+
   return (
     <div className="min-h-screen bg-white">
       <div className="max-w-4xl mx-auto px-4 py-8">
@@ -91,6 +110,7 @@ export function DashboardClient({ profile, latestSnapshot, currentGP }: Dashboar
           <div className="flex-1">
             <h1 className="font-bold text-xl text-[#0a0a0a]">{profile.github_username}</h1>
             <div className="flex items-center gap-3 text-[#a3a3a3] text-sm">
+              <span className={`px-2 py-0.5 rounded text-xs font-bold ${badgeClass}`}>{profile.division}</span>
               <span className="font-mono">#{profile.car_number}</span>
               <span>{profile.total_points} pts</span>
             </div>
@@ -125,6 +145,63 @@ export function DashboardClient({ profile, latestSnapshot, currentGP }: Dashboar
                   <Link href={`/gp/${currentGP.slug}/qualifying`} className="f1-btn f1-btn-secondary text-xs rounded-lg py-2 px-3">Qualifying</Link>
                   <Link href={`/gp/${currentGP.slug}/race`} className="f1-btn f1-btn-primary text-xs rounded-lg py-2 px-3">Race</Link>
                 </div>
+              </div>
+            )}
+
+            {/* Rival Battle */}
+            {rivals.length > 0 && (
+              <div className="rounded-xl border border-[#e5e5e5] bg-white overflow-hidden">
+                <div className="px-6 pt-5 pb-3">
+                  <span className="text-xs font-semibold text-[#a3a3a3] uppercase tracking-wider">Battle Zone</span>
+                </div>
+                {rivals.map((rival) => {
+                  const ahead = rival.pointsDiff > 0;
+                  const diff = Math.abs(rival.pointsDiff);
+                  return (
+                    <div key={rival.id} className="px-6 pb-5">
+                      <div className="flex items-center gap-3">
+                        {/* You */}
+                        <div className="flex-1 text-right">
+                          <img
+                            src={profile.avatar_url || `https://github.com/${profile.github_username}.png`}
+                            alt={profile.github_username}
+                            className="w-10 h-10 rounded-full ml-auto border-2 border-[#0a0a0a]"
+                          />
+                          <p className="text-sm font-bold text-[#0a0a0a] mt-1.5 truncate">{profile.github_username}</p>
+                          <p className="text-xs font-mono text-[#525252]">{profile.total_points} pts</p>
+                        </div>
+
+                        {/* VS divider */}
+                        <div className="flex flex-col items-center px-3">
+                          <div className="w-px h-4 bg-[#e5e5e5]" />
+                          <span className="text-xs font-black text-[#0a0a0a] tracking-widest my-1">VS</span>
+                          <div className="w-px h-4 bg-[#e5e5e5]" />
+                          <span className={`text-[10px] font-bold mt-1 ${ahead ? "text-[#0a0a0a]" : "text-[#a3a3a3]"}`}>
+                            {ahead ? `+${diff}` : `-${diff}`}
+                          </span>
+                        </div>
+
+                        {/* Rival */}
+                        <div className="flex-1">
+                          <img
+                            src={rival.avatar_url || `https://github.com/${rival.username}.png`}
+                            alt={rival.username}
+                            className="w-10 h-10 rounded-full border-2 border-[#d4d4d4]"
+                          />
+                          <p className="text-sm font-bold text-[#0a0a0a] mt-1.5 truncate">{rival.username}</p>
+                          <p className="text-xs font-mono text-[#525252]">{rival.points} pts</p>
+                        </div>
+                      </div>
+
+                      <Link
+                        href={`/compare/${profile.github_username}/${rival.username}`}
+                        className="block text-center text-xs font-semibold text-[#525252] hover:text-[#0a0a0a] mt-4 py-2 rounded-lg border border-[#e5e5e5] hover:border-[#d4d4d4] transition-colors"
+                      >
+                        Compare head-to-head
+                      </Link>
+                    </div>
+                  );
+                })}
               </div>
             )}
 

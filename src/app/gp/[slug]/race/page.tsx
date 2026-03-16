@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getGPBySlug } from "@/lib/f1/calendar";
 import { ShareResultLink } from "@/components/share-result-link";
+import { RaceTabs } from "@/components/race/race-tabs";
 
 interface RaceResultRow {
   id: string;
@@ -26,13 +27,18 @@ interface RaceResultRow {
 
 export default async function GPRacePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }) {
   const { slug } = await params;
+  const { tab } = await searchParams;
   const gp = getGPBySlug(slug);
 
   if (!gp) notFound();
+
+  const isSprint = gp.hasSprint && tab === "sprint";
 
   const supabase = await createClient();
 
@@ -60,12 +66,12 @@ export default async function GPRacePage({
 
   if (!gpRecord) notFound();
 
-  // Get race results
+  // Get race results filtered by sprint/race
   const { data: results } = await supabase
     .from("race_results")
     .select("*, profiles(github_username, avatar_url, car_color, car_number)")
     .eq("gp_id", gpRecord.id)
-    .eq("is_sprint", false)
+    .eq("is_sprint", isSprint)
     .order("final_position", { ascending: true, nullsFirst: false });
 
   const raceResults = (results ?? []) as unknown as RaceResultRow[];
@@ -112,13 +118,20 @@ export default async function GPRacePage({
 
       {/* Results table */}
       <section className="max-w-4xl mx-auto px-4 md:px-8 py-10">
+        {/* Sprint/Race tabs for sprint weekends */}
+        {gp.hasSprint && (
+          <div className="mb-6">
+            <RaceTabs slug={slug} accentColor={accentColor} />
+          </div>
+        )}
+
         {raceResults.length === 0 ? (
           <div className="text-center py-16">
             <p className="text-[#a3a3a3] text-sm uppercase tracking-wider">
-              No race results yet
+              No {isSprint ? "sprint" : "race"} results yet
             </p>
             <p className="text-[#525252] mt-2">
-              Results will appear here after the race simulation.
+              Results will appear here after the {isSprint ? "sprint" : "race"} simulation.
             </p>
           </div>
         ) : (

@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { DriverCard } from "@/components/driver/driver-card";
 import { CompareLink } from "@/components/driver/compare-link";
+import { getDivisionFromPoints } from "@/lib/race/divisions";
 import { notFound } from "next/navigation";
 
 export async function generateMetadata({ params }: { params: Promise<{ username: string }> }) {
@@ -16,6 +17,7 @@ export default async function DriverPage({ params }: { params: Promise<{ usernam
   if (!profile) notFound();
 
   const carStats = profile.car_stats ?? { power_unit: 0, aero: 0, reliability: 0, tire_mgmt: 0, strategy: 0 };
+  const division = getDivisionFromPoints(profile.total_points ?? 0);
 
   const { data: entries } = await supabase
     .from("race_entries")
@@ -41,8 +43,8 @@ export default async function DriverPage({ params }: { params: Promise<{ usernam
           username={profile.github_username}
           avatarUrl={profile.avatar_url || ""}
           carNumber={profile.car_number || 0}
-          division="F3"
-          divisionLevel={1}
+          division={division.name}
+          divisionLevel={division.level}
           carStats={carStats}
           totalPoints={profile.total_points || 0}
         />
