@@ -16,7 +16,7 @@ const ACHIEVEMENTS = [
   { slug: "sprint_king", name: "Sprint King", description: "Win 3 sprint races in a season", icon: "\u{26A1}", category: "race" },
 ];
 
-const CATEGORY_LABELS: Record<string, string> = {
+const CATEGORIES: Record<string, string> = {
   race: "Race",
   qualifying: "Qualifying",
   contribution: "Contribution",
@@ -27,37 +27,32 @@ export default function AchievementsPage() {
   const categories = [...new Set(ACHIEVEMENTS.map((a) => a.category))];
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-white">
+    <div className="min-h-screen bg-white">
       <div className="max-w-3xl mx-auto px-4 py-8">
-        <h1 className="text-3xl font-black mb-2">Achievements</h1>
-        <p className="text-neutral-400 mb-8">Unlock badges by racing and contributing</p>
+        <h1 className="f1-heading text-3xl text-[#0a0a0a] mb-1">Achievements</h1>
+        <p className="text-[#a3a3a3] text-sm mb-8">Unlock badges by racing and contributing</p>
 
         {categories.map((cat) => (
           <div key={cat} className="mb-8">
-            <h2 className="text-sm font-bold text-neutral-500 uppercase tracking-wider mb-3">
-              {CATEGORY_LABELS[cat] ?? cat}
+            <h2 className="text-xs font-bold text-[#a3a3a3] uppercase tracking-wider mb-3">
+              {CATEGORIES[cat] ?? cat}
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {ACHIEVEMENTS.filter((a) => a.category === cat).map((achievement) => (
-                <div
-                  key={achievement.slug}
-                  className="flex items-center gap-3 p-4 rounded-xl border border-neutral-800 bg-neutral-900 opacity-60"
-                >
-                  <span className="text-2xl">{achievement.icon}</span>
-                  <div>
-                    <p className="text-white text-sm font-medium">{achievement.name}</p>
-                    <p className="text-neutral-500 text-xs">{achievement.description}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {ACHIEVEMENTS.filter((a) => a.category === cat).map((a) => (
+                <div key={a.slug} className="flex items-center gap-3 p-4 rounded-xl border border-[#e5e5e5] opacity-50">
+                  <span className="text-2xl">{a.icon}</span>
+                  <div className="flex-1">
+                    <p className="text-[#0a0a0a] text-sm font-bold">{a.name}</p>
+                    <p className="text-[#a3a3a3] text-xs">{a.description}</p>
                   </div>
-                  <span className="ml-auto text-neutral-700 text-xs">Locked</span>
+                  <span className="text-[#d4d4d4] text-xs font-medium">Locked</span>
                 </div>
               ))}
             </div>
           </div>
         ))}
 
-        <p className="text-neutral-600 text-xs text-center mt-4">
-          Sign in to track your achievement progress
-        </p>
+        <p className="text-[#a3a3a3] text-xs text-center mt-4">Sign in to track your progress</p>
       </div>
     </div>
   );

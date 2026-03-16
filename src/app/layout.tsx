@@ -1,19 +1,15 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Titillium_Web } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Nav } from "@/components/nav";
 import { getCurrentGP, getNextGP, getGPStatus, getCurrentTheme } from "@/lib/f1/calendar";
 import { createClient } from "@/lib/supabase/server";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const titillium = Titillium_Web({
+  variable: "--font-titillium",
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  weight: ["300", "400", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -38,9 +34,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en" className="dark">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-neutral-950 text-white`}
-      >
+      <body className={`${titillium.variable} font-[family-name:var(--font-titillium)] antialiased bg-white text-[#0a0a0a]`}>
         <ThemeProvider value={{ gp, theme, status }}>
           <Nav isAuthenticated={!!user} />
           {children}

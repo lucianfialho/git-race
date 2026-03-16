@@ -9,71 +9,63 @@ export function Nav({ isAuthenticated }: { isAuthenticated: boolean }) {
   const { gp, status } = useGPTheme();
 
   const statusLabel =
-    status === "qualifying" ? "Qualifying Live" :
-    status === "sprint" ? "Sprint Day" :
-    status === "race_day" ? "Race Day" :
-    gp ? gp.name : null;
+    status === "qualifying" ? "Qualifying" :
+    status === "sprint" ? "Sprint" :
+    status === "race_day" ? "Race Day" : null;
 
   return (
-    <nav className="flex items-center justify-between px-4 md:px-6 py-3 border-b border-neutral-800/50 bg-neutral-950/80 backdrop-blur-sm sticky top-0 z-50">
-      <div className="flex items-center gap-4">
-        <Link href="/" className="font-bold text-lg text-white">
-          GitRace
+    <nav className="flex items-center justify-between px-4 md:px-8 py-4 border-b border-[#e5e5e5]">
+      <div className="flex items-center gap-6">
+        <Link href="/" className="font-bold text-lg tracking-tight text-[#0a0a0a]">
+          GITRACE
         </Link>
-        {statusLabel && (
-          <span className="hidden sm:inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-neutral-800 border border-neutral-700">
-            {(status === "qualifying" || status === "sprint" || status === "race_day") && (
-              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "var(--gp-primary)" }} />
-            )}
-            <span className="text-neutral-300">{statusLabel}</span>
+        {statusLabel && gp && (
+          <span className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#e10600] animate-pulse" />
+            <span className="text-[#525252]">{gp.name} — {statusLabel}</span>
           </span>
         )}
       </div>
 
-      {/* Desktop nav */}
-      <div className="hidden md:flex items-center gap-5">
-        <Link href="/calendar" className="text-neutral-400 text-sm hover:text-white transition-colors">Calendar</Link>
-        <Link href="/leaderboard" className="text-neutral-400 text-sm hover:text-white transition-colors">Standings</Link>
+      {/* Desktop */}
+      <div className="hidden md:flex items-center gap-6">
+        <Link href="/calendar" className="text-[#525252] text-sm font-medium hover:text-[#0a0a0a] transition-colors">Calendar</Link>
+        <Link href="/leaderboard" className="text-[#525252] text-sm font-medium hover:text-[#0a0a0a] transition-colors">Standings</Link>
         {isAuthenticated ? (
           <>
-            <Link href="/dashboard" className="text-neutral-400 text-sm hover:text-white transition-colors">Dashboard</Link>
-            <Link href="/achievements" className="text-neutral-400 text-sm hover:text-white transition-colors">Achievements</Link>
+            <Link href="/dashboard" className="text-[#525252] text-sm font-medium hover:text-[#0a0a0a] transition-colors">Dashboard</Link>
+            <Link href="/achievements" className="text-[#525252] text-sm font-medium hover:text-[#0a0a0a] transition-colors">Achievements</Link>
           </>
         ) : (
-          <Link href="/login" className="bg-white text-black font-medium px-4 py-1.5 rounded-lg text-sm hover:bg-neutral-200 transition-colors">
-            Sign in
+          <Link href="/login" className="f1-btn-primary text-sm px-4 py-2 rounded-lg font-semibold">
+            Sign in with GitHub
           </Link>
         )}
       </div>
 
-      {/* Mobile hamburger */}
+      {/* Mobile */}
       <button
-        className="md:hidden text-neutral-400 hover:text-white p-1"
+        className="md:hidden text-[#525252] hover:text-[#0a0a0a] p-1"
         onClick={() => setMenuOpen(!menuOpen)}
         aria-label="Toggle menu"
       >
         <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-          {menuOpen ? (
-            <path d="M6 6l12 12M6 18L18 6" />
-          ) : (
-            <path d="M4 6h16M4 12h16M4 18h16" />
-          )}
+          {menuOpen ? <path d="M6 6l12 12M6 18L18 6" /> : <path d="M4 6h16M4 12h16M4 18h16" />}
         </svg>
       </button>
 
-      {/* Mobile menu */}
       {menuOpen && (
-        <div className="absolute top-full left-0 right-0 bg-neutral-950 border-b border-neutral-800 p-4 flex flex-col gap-3 md:hidden">
-          <Link href="/calendar" className="text-neutral-300 py-2" onClick={() => setMenuOpen(false)}>Calendar</Link>
-          <Link href="/leaderboard" className="text-neutral-300 py-2" onClick={() => setMenuOpen(false)}>Standings</Link>
+        <div className="absolute top-full left-0 right-0 bg-white border-b border-[#e5e5e5] p-4 flex flex-col gap-3 md:hidden z-50">
+          <Link href="/calendar" className="text-[#0a0a0a] py-2 font-medium" onClick={() => setMenuOpen(false)}>Calendar</Link>
+          <Link href="/leaderboard" className="text-[#0a0a0a] py-2 font-medium" onClick={() => setMenuOpen(false)}>Standings</Link>
           {isAuthenticated ? (
             <>
-              <Link href="/dashboard" className="text-neutral-300 py-2" onClick={() => setMenuOpen(false)}>Dashboard</Link>
-              <Link href="/achievements" className="text-neutral-300 py-2" onClick={() => setMenuOpen(false)}>Achievements</Link>
+              <Link href="/dashboard" className="text-[#0a0a0a] py-2 font-medium" onClick={() => setMenuOpen(false)}>Dashboard</Link>
+              <Link href="/achievements" className="text-[#0a0a0a] py-2 font-medium" onClick={() => setMenuOpen(false)}>Achievements</Link>
             </>
           ) : (
-            <Link href="/login" className="bg-white text-black font-medium px-4 py-2 rounded-lg text-sm text-center" onClick={() => setMenuOpen(false)}>
-              Sign in
+            <Link href="/login" className="f1-btn-primary text-sm px-4 py-2 rounded-lg text-center font-semibold" onClick={() => setMenuOpen(false)}>
+              Sign in with GitHub
             </Link>
           )}
         </div>

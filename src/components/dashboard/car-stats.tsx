@@ -7,11 +7,11 @@ interface CarStatsDisplayProps {
 }
 
 const COMPONENTS = [
-  { key: "power_unit" as const, name: "Power Unit", icon: "\u{26A1}", color: "#ef4444", hint: "Push more commits to improve" },
-  { key: "aero" as const, name: "Aerodynamics", icon: "\u{1F4A8}", color: "#3b82f6", hint: "Open and merge more PRs" },
-  { key: "reliability" as const, name: "Reliability", icon: "\u{1F6E1}\u{FE0F}", color: "#22c55e", hint: "Contribute consistently every day" },
-  { key: "tire_mgmt" as const, name: "Tire Management", icon: "\u{1F6DE}", color: "#a855f7", hint: "Review more pull requests" },
-  { key: "strategy" as const, name: "Strategy", icon: "\u{1F9E0}", color: "#f59e0b", hint: "Open and close more issues" },
+  { key: "power_unit" as const, name: "Power Unit", hint: "Push more commits" },
+  { key: "aero" as const, name: "Aerodynamics", hint: "Open and merge PRs" },
+  { key: "reliability" as const, name: "Reliability", hint: "Contribute daily" },
+  { key: "tire_mgmt" as const, name: "Tire Management", hint: "Review pull requests" },
+  { key: "strategy" as const, name: "Strategy", hint: "Work on issues" },
 ];
 
 export function CarStatsDisplay({ stats, previousStats }: CarStatsDisplayProps) {
@@ -20,14 +20,14 @@ export function CarStatsDisplay({ stats, previousStats }: CarStatsDisplayProps) 
   const overallDelta = prevOverall !== null ? Math.round((overall - prevOverall) * 10) / 10 : null;
 
   return (
-    <div className="bg-neutral-900 rounded-2xl border border-neutral-800 p-6">
+    <div className="rounded-xl border border-[#e5e5e5] p-6 bg-white">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="font-bold text-white">Car Development</h3>
-        <div className="flex items-center gap-2">
-          <span className="text-2xl font-black text-white">{Math.round(overall)}</span>
-          <span className="text-neutral-500 text-xs">OVR</span>
+        <h3 className="font-bold text-[#0a0a0a]">Car Development</h3>
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-3xl font-black text-[#0a0a0a]">{Math.round(overall)}</span>
+          <span className="text-[#a3a3a3] text-xs">OVR</span>
           {overallDelta !== null && overallDelta !== 0 && (
-            <span className={`text-xs font-mono ${overallDelta > 0 ? "position-up" : "position-down"}`}>
+            <span className={`text-xs font-bold ${overallDelta > 0 ? "position-up" : "position-down"}`}>
               {overallDelta > 0 ? "+" : ""}{overallDelta}
             </span>
           )}
@@ -35,7 +35,7 @@ export function CarStatsDisplay({ stats, previousStats }: CarStatsDisplayProps) 
       </div>
 
       <div className="space-y-4">
-        {COMPONENTS.map(({ key, name, icon, color, hint }) => {
+        {COMPONENTS.map(({ key, name, hint }) => {
           const value = stats[key];
           const prev = previousStats?.[key];
           const delta = prev !== undefined ? Math.round((value - prev) * 10) / 10 : null;
@@ -43,23 +43,20 @@ export function CarStatsDisplay({ stats, previousStats }: CarStatsDisplayProps) 
           return (
             <div key={key} className="group">
               <div className="flex items-center justify-between mb-1.5">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm">{icon}</span>
-                  <span className="text-neutral-300 text-sm">{name}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-white font-mono text-sm font-bold">{Math.round(value)}</span>
+                <span className="text-[#525252] text-sm">{name}</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[#0a0a0a] text-sm font-bold">{Math.round(value)}</span>
                   {delta !== null && delta !== 0 && (
-                    <span className={`text-xs font-mono ${delta > 0 ? "position-up" : "position-down"}`}>
+                    <span className={`text-xs font-bold ${delta > 0 ? "position-up" : "position-down"}`}>
                       {delta > 0 ? "+" : ""}{delta}
                     </span>
                   )}
                 </div>
               </div>
               <div className="stat-bar">
-                <div className="stat-bar-fill" style={{ width: `${value}%`, background: color }} />
+                <div className="stat-bar-fill bg-[#0a0a0a]" style={{ width: `${value}%` }} />
               </div>
-              <p className="text-neutral-600 text-xs mt-1 hidden group-hover:block">{hint}</p>
+              <p className="text-[#a3a3a3] text-xs mt-1 hidden group-hover:block">{hint}</p>
             </div>
           );
         })}

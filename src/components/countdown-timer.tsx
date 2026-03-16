@@ -18,7 +18,6 @@ function getTimeRemaining(target: Date) {
 export function CountdownTimer({
   targetDate,
   liveLabel = "LIVE",
-  finishedLabel = "Finished",
 }: {
   targetDate: string;
   liveLabel?: string;
@@ -28,36 +27,33 @@ export function CountdownTimer({
   const [time, setTime] = useState(getTimeRemaining(target));
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setTime(getTimeRemaining(target));
-    }, 1000);
+    const interval = setInterval(() => setTime(getTimeRemaining(target)), 1000);
     return () => clearInterval(interval);
   }, [targetDate]);
 
   if (time.isPast) {
     return (
-      <span className="inline-flex items-center gap-1.5 text-sm font-bold" style={{ color: "var(--gp-primary)" }}>
-        <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: "var(--gp-primary)" }} />
+      <span className="inline-flex items-center gap-1.5 text-sm font-bold text-[#e10600]">
+        <span className="w-2 h-2 rounded-full animate-pulse bg-[#e10600]" />
         {liveLabel}
       </span>
     );
   }
 
-  const blocks = [
-    { value: time.days, label: "d" },
-    { value: time.hours, label: "h" },
-    { value: time.minutes, label: "m" },
-    { value: time.seconds, label: "s" },
-  ].filter((b) => b.value > 0 || b.label === "s");
-
   return (
-    <div className="flex items-center gap-1 font-mono text-sm">
-      {blocks.map((b) => (
-        <span key={b.label} className="text-white">
-          {String(b.value).padStart(2, "0")}
-          <span className="text-neutral-500">{b.label}</span>
-          {b.label !== "s" && <span className="text-neutral-600 mx-0.5">:</span>}
-        </span>
+    <div className="flex items-center gap-2 font-mono">
+      {[
+        { value: time.days, label: "DAYS" },
+        { value: time.hours, label: "HRS" },
+        { value: time.minutes, label: "MIN" },
+        { value: time.seconds, label: "SEC" },
+      ].filter((b) => b.value > 0 || b.label === "SEC").map((b) => (
+        <div key={b.label} className="text-center">
+          <div className="text-2xl font-bold text-[#0a0a0a] leading-none">
+            {String(b.value).padStart(2, "0")}
+          </div>
+          <div className="text-[9px] font-semibold text-[#a3a3a3] tracking-widest mt-1">{b.label}</div>
+        </div>
       ))}
     </div>
   );
