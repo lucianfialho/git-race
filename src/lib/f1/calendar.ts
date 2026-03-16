@@ -216,6 +216,25 @@ export function getNextGP(now: Date = new Date()): GrandPrix | null {
   return null;
 }
 
+// Returns the most relevant GP to display: current > next > last finished
+export function getMostRelevantGP(now: Date = new Date()): GrandPrix | null {
+  const current = getCurrentGP(now);
+  if (current) return current;
+
+  const next = getNextGP(now);
+  if (next) return next;
+
+  // Off-season or all GPs finished — return last GP
+  for (let i = F1_2025_CALENDAR.length - 1; i >= 0; i--) {
+    if (getGPStatus(F1_2025_CALENDAR[i], now) === "finished") {
+      return F1_2025_CALENDAR[i];
+    }
+  }
+
+  // Fallback: first GP (pre-season)
+  return F1_2025_CALENDAR[0] ?? null;
+}
+
 export function getGPBySlug(slug: string): GrandPrix | null {
   return F1_2025_CALENDAR.find((gp) => gp.slug === slug) ?? null;
 }

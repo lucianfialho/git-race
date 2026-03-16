@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { CountdownTimer } from "./countdown-timer";
+import { getTrackLayout } from "@/lib/f1/track-layouts";
 
 const COUNTRY_FLAGS: Record<string, string> = {
   AU: "\u{1F1E6}\u{1F1FA}", CN: "\u{1F1E8}\u{1F1F3}", JP: "\u{1F1EF}\u{1F1F5}",
@@ -54,14 +55,21 @@ const STATUS_CONFIG: Record<string, { label: string; sublabel: string; icon: str
     sublabel: "Qualifying opens when the race week begins",
     icon: "\u{1F4C5}",
   },
+  finished: {
+    label: "LATEST RESULT",
+    sublabel: "This Grand Prix has finished — check the results",
+    icon: "\u{1F3C1}",
+  },
 };
 
 export function GPHero({ gp, status }: GPHeroProps) {
   const config = STATUS_CONFIG[status] ?? STATUS_CONFIG.upcoming;
   const isLive = status === "qualifying" || status === "sprint" || status === "race_day";
   const flag = COUNTRY_FLAGS[gp.countryCode] ?? "";
+  const trackPath = getTrackLayout(gp.slug);
 
   const countdownTarget =
+    status === "finished" ? null :
     status === "qualifying" ? gp.dates.qualiEnd :
     status === "sprint" && gp.dates.sprintDate ? gp.dates.sprintDate :
     status === "race_day" ? gp.dates.raceDate :
@@ -88,6 +96,27 @@ export function GPHero({ gp, status }: GPHeroProps) {
           background: `radial-gradient(ellipse at 80% 20%, ${gp.themeColors.primary}, transparent 60%)`,
         }}
       />
+
+      {/* Track layout SVG — large, subtle, positioned right */}
+      {trackPath && (
+        <svg
+          className="absolute right-0 top-1/2 -translate-y-1/2 opacity-[0.06] pointer-events-none hidden md:block"
+          width="360"
+          height="360"
+          viewBox="0 0 100 100"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d={trackPath}
+            stroke={gp.themeColors.primary}
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+          />
+        </svg>
+      )}
 
       <div className="max-w-4xl mx-auto px-4 py-10 md:py-16 relative">
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-8">
@@ -140,6 +169,12 @@ export function GPHero({ gp, status }: GPHeroProps) {
           {/* Right: Countdown + session info */}
           <div className="md:text-right shrink-0">
             <div className="inline-block p-6 rounded-2xl border border-[#e5e5e5] bg-white/80 backdrop-blur-sm">
+              {status === "finished" && (
+                <div className="mb-1">
+                  <span className="text-2xl font-black text-[#0a0a0a]">Complete</span>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#a3a3a3] mt-1">Season 2025</p>
+                </div>
+              )}
               {isLive && (
                 <div className="mb-3">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[#a3a3a3]">
@@ -147,7 +182,7 @@ export function GPHero({ gp, status }: GPHeroProps) {
                   </span>
                 </div>
               )}
-              {!isLive && (
+              {!isLive && status !== "finished" && (
                 <div className="mb-3">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[#a3a3a3]">
                     Qualifying starts in
