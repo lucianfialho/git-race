@@ -1,225 +1,255 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getGPBySlug, getGPStatus, getNow } from "@/lib/f1/calendar";
 import { createClient } from "@/lib/supabase/server";
-import { runQualifying, type QualifyingDriver } from "@/lib/race/qualifying";
-import { simulateRace, type RaceDriver, type RaceConfig } from "@/lib/race/simulation";
-import { fillGridWithBots } from "@/lib/race/matchmaking";
-import { CountdownTimer } from "@/components/countdown-timer";
-import { EventTimeline } from "@/components/race/event-timeline";
-import { loadSnapshot } from "@/lib/race/snapshots";
+import { getGPBySlug } from "@/lib/f1/calendar";
+import { ShareResultLink } from "@/components/share-result-link";
 
-export const dynamic = "force-dynamic";
+interface RaceResultRow {
+  id: string;
+  grid_position: number;
+  final_position: number | null;
+  points_earned: number;
+  fastest_lap: boolean;
+  dnf: boolean;
+  dnf_reason: string | null;
+  gap_to_leader: number;
+  is_bot: boolean;
+  bot_name: string | null;
+  profile_id: string | null;
+  profiles: {
+    github_username: string;
+    avatar_url: string | null;
+    car_color: string;
+    car_number: number;
+  } | null;
+}
 
-export default async function RaceResultPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function GPRacePage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
   const { slug } = await params;
   const gp = getGPBySlug(slug);
+
   if (!gp) notFound();
 
-  const now = getNow();
-  const status = getGPStatus(gp, now);
   const supabase = await createClient();
 
-  // Simulate qualifying + race
-  let raceResults: Array<{
-    position: number;
-    name: string;
-    isBot: boolean;
-    avatarUrl: string;
-    gridPosition: number;
-    points: number;
-    fastestLap: boolean;
-    dnf: boolean;
-    dnfReason: string | null;
-    gap: number;
-  }> = [];
+  // Get current user
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  let events: Array<{ lap: number; type: string; description: string }> = [];
-  let hadRain = false;
-  let safetyCars = 0;
-
-  // First, try to load persisted snapshot from DB
-  const snapshot = await loadSnapshot(slug);
-  if (snapshot?.race_data && snapshot.race_data.results) {
-    raceResults = snapshot.race_data.results;
-    events = snapshot.race_data.events;
-    hadRain = snapshot.race_data.hadRain;
-    safetyCars = snapshot.race_data.safetyCars;
-  } else if (status === "race_day" || status === "sprint" || status === "finished") {
-    // Fallback: simulate on-the-fly
-    const { data: profiles } = await supabase
+  let currentProfile: { id: string; github_username: string } | null = null;
+  if (user) {
+    const { data } = await supabase
       .from("profiles")
-      .select("id, github_username, avatar_url, car_stats")
-      .not("car_stats", "is", null)
-      .order("total_points", { ascending: false });
-
-    if (profiles && profiles.length > 0) {
-      const realDrivers = profiles.map((p) => ({ profileId: p.id }));
-      const grid = fillGridWithBots(realDrivers, 1, slug);
-
-      const qualDrivers: QualifyingDriver[] = grid.map((slot) => {
-        if (slot.isBot) {
-          return { profileId: slot.botName ?? "bot", name: slot.botName ?? "Bot", carStats: slot.botStats!, isBot: true };
-        }
-        const p = profiles.find((pr) => pr.id === slot.profileId);
-        return {
-          profileId: slot.profileId!,
-          name: p?.github_username ?? "Unknown",
-          carStats: p?.car_stats ?? { power_unit: 30, aero: 30, reliability: 30, tire_mgmt: 30, strategy: 30 },
-          isBot: false,
-        };
-      });
-
-      const qualiResults = runQualifying(qualDrivers, `${slug}-quali`);
-
-      const raceDrivers: RaceDriver[] = qualiResults.map((q) => {
-        const qd = qualDrivers.find((d) => d.profileId === q.profileId)!;
-        return { profileId: q.profileId, name: q.name, carStats: qd.carStats, gridPosition: q.finalPosition, isBot: q.isBot };
-      });
-
-      const config: RaceConfig = { totalLaps: 57, isSprint: false, seed: `${slug}-race`, weatherChance: 0.3 };
-      const sim = simulateRace(raceDrivers, config);
-
-      raceResults = sim.results.map((r) => {
-        const p = profiles.find((pr) => pr.github_username === r.name || pr.id === r.profileId);
-        return {
-          position: r.finalPosition,
-          name: r.name,
-          isBot: r.isBot,
-          avatarUrl: p?.avatar_url ?? "",
-          gridPosition: r.gridPosition,
-          points: r.points,
-          fastestLap: r.fastestLap,
-          dnf: r.dnf,
-          dnfReason: r.dnfReason,
-          gap: r.gapToLeader,
-        };
-      });
-
-      events = sim.events;
-      hadRain = sim.hadRain;
-      safetyCars = sim.safetyCars;
-    }
+      .select("id, github_username")
+      .eq("id", user.id)
+      .single();
+    currentProfile = data;
   }
 
-  const podium = raceResults.slice(0, 3);
-  const hasResults = raceResults.length > 0;
+  // Get GP record
+  const { data: gpRecord } = await supabase
+    .from("grand_prix")
+    .select("id, status")
+    .eq("slug", slug)
+    .single();
+
+  if (!gpRecord) notFound();
+
+  // Get race results
+  const { data: results } = await supabase
+    .from("race_results")
+    .select("*, profiles(github_username, avatar_url, car_color, car_number)")
+    .eq("gp_id", gpRecord.id)
+    .eq("is_sprint", false)
+    .order("final_position", { ascending: true, nullsFirst: false });
+
+  const raceResults = (results ?? []) as unknown as RaceResultRow[];
+
+  const accentColor = gp.themeColors.primary;
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="max-w-3xl mx-auto px-4 py-8">
-        <div className="mb-6">
-          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#a3a3a3]">Round {gp.round} — Race</span>
-          <h1 className="f1-heading text-2xl text-[#0a0a0a] mt-1">{gp.name}</h1>
-          <p className="text-[#525252] text-sm">{gp.circuit}</p>
-          {gp.hasSprint && <span className="f1-tag f1-tag-neutral mt-2">Sprint Weekend</span>}
-        </div>
+      {/* Header */}
+      <section
+        className="relative overflow-hidden"
+        style={{ backgroundColor: "#0a0a0a" }}
+      >
+        <div
+          className="absolute top-0 left-0 right-0 h-1"
+          style={{ backgroundColor: accentColor }}
+        />
+        <div className="max-w-4xl mx-auto px-4 md:px-8 py-10">
+          <p
+            className="text-xs font-bold uppercase tracking-[0.2em] mb-2"
+            style={{ color: accentColor }}
+          >
+            Round {gp.round}
+          </p>
+          <h1 className="text-2xl md:text-3xl font-bold uppercase tracking-tight text-white">
+            {gp.name}
+          </h1>
+          <p className="text-white/40 text-sm mt-1 uppercase tracking-wider">
+            {gp.circuit}
+          </p>
 
-        {(status === "upcoming" || status === "qualifying") && (
-          <div className="text-center p-12 rounded-sm border border-[#e5e5e5]">
-            <p className="text-[#525252] mb-4">Race starts</p>
-            <CountdownTimer targetDate={gp.dates.raceDate} />
-            <Link href={`/gp/${slug}/qualifying`} className="inline-block mt-4 text-sm font-semibold text-[#e10600] hover:underline">
-              View Qualifying
-            </Link>
+          {/* Share button for current user */}
+          {currentProfile && (
+            <div className="mt-6">
+              <ShareResultLink
+                slug={slug}
+                username={currentProfile.github_username}
+                accentColor={accentColor}
+              />
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Results table */}
+      <section className="max-w-4xl mx-auto px-4 md:px-8 py-10">
+        {raceResults.length === 0 ? (
+          <div className="text-center py-16">
+            <p className="text-[#a3a3a3] text-sm uppercase tracking-wider">
+              No race results yet
+            </p>
+            <p className="text-[#525252] mt-2">
+              Results will appear here after the race simulation.
+            </p>
+          </div>
+        ) : (
+          <div className="border border-[#e5e5e5] rounded-sm overflow-hidden">
+            {/* Table header */}
+            <div className="grid grid-cols-[48px_1fr_80px_80px_64px] sm:grid-cols-[48px_1fr_80px_80px_80px_64px] gap-0 px-4 py-3 bg-[#fafafa] border-b border-[#e5e5e5] text-[10px] font-bold uppercase tracking-[0.15em] text-[#a3a3a3]">
+              <span>Pos</span>
+              <span>Driver</span>
+              <span className="hidden sm:block">Grid</span>
+              <span>Gap</span>
+              <span>Pts</span>
+              <span></span>
+            </div>
+
+            {/* Rows */}
+            {raceResults.map((result) => {
+              const driverName =
+                result.profiles?.github_username ?? result.bot_name ?? "Unknown";
+              const avatar =
+                result.profiles?.avatar_url ??
+                (result.is_bot
+                  ? `https://api.dicebear.com/7.x/bottts/svg?seed=${result.bot_name}`
+                  : null);
+              const gridChange =
+                result.grid_position != null && result.final_position != null
+                  ? result.grid_position - result.final_position
+                  : 0;
+              const isCurrentUser =
+                currentProfile && result.profile_id === currentProfile.id;
+
+              return (
+                <div
+                  key={result.id}
+                  className={`grid grid-cols-[48px_1fr_80px_80px_64px] sm:grid-cols-[48px_1fr_80px_80px_80px_64px] gap-0 px-4 py-3 border-b border-[#f0f0f0] last:border-0 items-center ${isCurrentUser ? "bg-[#fafafa]" : ""}`}
+                >
+                  {/* Position */}
+                  <span className="text-lg font-black text-[#0a0a0a] tabular-nums">
+                    {result.dnf
+                      ? "DNF"
+                      : result.final_position ?? "--"}
+                  </span>
+
+                  {/* Driver */}
+                  <div className="flex items-center gap-2 min-w-0">
+                    {avatar && (
+                      <img
+                        src={avatar}
+                        alt=""
+                        className="w-7 h-7 rounded-full flex-shrink-0"
+                      />
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-[#0a0a0a] truncate">
+                        {driverName}
+                      </p>
+                      {result.fastest_lap && (
+                        <span className="text-[10px] font-bold uppercase tracking-wider fastest-lap">
+                          Fastest Lap
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Grid */}
+                  <span className="hidden sm:flex items-center gap-1 text-sm text-[#525252] tabular-nums">
+                    P{result.grid_position}
+                    {gridChange !== 0 && (
+                      <span
+                        className={`text-xs font-bold ${gridChange > 0 ? "position-up" : "position-down"}`}
+                      >
+                        {gridChange > 0 ? `+${gridChange}` : gridChange}
+                      </span>
+                    )}
+                  </span>
+
+                  {/* Gap */}
+                  <span className="text-sm text-[#525252] tabular-nums">
+                    {result.dnf
+                      ? result.dnf_reason ?? "Retired"
+                      : result.final_position === 1
+                        ? "Leader"
+                        : result.gap_to_leader > 0
+                          ? `+${result.gap_to_leader.toFixed(1)}s`
+                          : "--"}
+                  </span>
+
+                  {/* Points */}
+                  <span
+                    className="text-sm font-bold tabular-nums"
+                    style={{
+                      color:
+                        result.points_earned > 0 ? accentColor : "#a3a3a3",
+                    }}
+                  >
+                    {result.points_earned > 0
+                      ? `+${result.points_earned}`
+                      : "0"}
+                  </span>
+
+                  {/* Link to result page */}
+                  <span className="text-right">
+                    {result.profiles?.github_username && (
+                      <Link
+                        href={`/gp/${slug}/result/${result.profiles.github_username}`}
+                        className="text-xs text-[#a3a3a3] hover:text-[#0a0a0a] transition-colors"
+                      >
+                        View
+                      </Link>
+                    )}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         )}
 
-        {hasResults && (
-          <>
-            {/* Podium */}
-            <div className="flex items-end justify-center gap-6 mb-8 pt-4">
-              {[
-                { r: podium[1], pos: "P2", h: "h-24", order: 1 },
-                { r: podium[0], pos: "P1", h: "h-32", order: 2 },
-                { r: podium[2], pos: "P3", h: "h-16", order: 3 },
-              ].map(({ r, pos, h, order }) => r && (
-                <div key={pos} className="flex flex-col items-center" style={{ order }}>
-                  {r.avatarUrl ? (
-                    <img src={r.avatarUrl} alt="" className="w-12 h-12 rounded-full mb-1" />
-                  ) : (
-                    <div className="w-12 h-12 rounded-full bg-[#e5e5e5] mb-1" />
-                  )}
-                  <span className={`text-sm font-bold ${r.isBot ? "text-[#a3a3a3]" : "text-[#0a0a0a]"}`}>{r.name}</span>
-                  <span className="text-[#a3a3a3] text-xs">{r.points} pts</span>
-                  <span className="text-xs font-bold text-[#a3a3a3] mt-1">{pos}</span>
-                  <div className={`w-20 ${h} rounded-t-lg mt-1 ${pos === "P1" ? "bg-[#0a0a0a]" : "bg-[#e5e5e5]"}`} />
-                </div>
-              ))}
-            </div>
-
-            {/* Race stats */}
-            <div className="flex gap-4 mb-6">
-              {[
-                { label: "Laps", value: "57" },
-                { label: "Safety Cars", value: String(safetyCars) },
-                { label: "Weather", value: hadRain ? "Wet" : "Dry" },
-                { label: "Events", value: String(events.length) },
-              ].map((s) => (
-                <div key={s.label} className="flex-1 text-center p-3 rounded-sm border border-[#e5e5e5]">
-                  <p className="text-lg font-black text-[#0a0a0a]">{s.value}</p>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#a3a3a3]">{s.label}</p>
-                </div>
-              ))}
-            </div>
-
-            {/* Timeline */}
-            <EventTimeline events={events} />
-
-            {/* Classification */}
-            <div className="rounded-sm border border-[#e5e5e5] overflow-hidden">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-[#e5e5e5] text-[10px] uppercase tracking-[0.15em] text-[#a3a3a3]">
-                    <th className="text-left py-3 px-4 w-12 font-semibold">Pos</th>
-                    <th className="text-left py-3 px-4 font-semibold">Driver</th>
-                    <th className="text-right py-3 px-4 w-14 font-semibold hidden sm:table-cell">Grid</th>
-                    <th className="text-right py-3 px-4 w-16 font-semibold hidden sm:table-cell">Gap</th>
-                    <th className="text-right py-3 px-4 w-14 font-semibold">Pts</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {raceResults.map((r) => {
-                    const posChange = r.gridPosition - r.position;
-                    return (
-                      <tr key={`${r.name}-${r.position}`} className="border-b border-[#f5f5f5] last:border-0 hover:bg-[#fafafa]">
-                        <td className="py-2.5 px-4">
-                          <span className={`font-black text-sm ${r.position <= 3 ? "text-[#0a0a0a]" : "text-[#a3a3a3]"}`}>
-                            {r.dnf ? "DNF" : r.position}
-                          </span>
-                        </td>
-                        <td className="py-2.5 px-4">
-                          <div className="flex items-center gap-2">
-                            {r.avatarUrl ? (
-                              <img src={r.avatarUrl} alt="" className="w-6 h-6 rounded-full" />
-                            ) : (
-                              <div className="w-6 h-6 rounded-full bg-[#e5e5e5]" />
-                            )}
-                            <span className={`text-sm font-semibold ${r.isBot ? "text-[#a3a3a3]" : "text-[#0a0a0a]"}`}>{r.name}</span>
-                            {r.fastestLap && <span className="text-[10px] font-bold text-purple-600">FL</span>}
-                            {posChange > 0 && <span className="text-[10px] font-bold text-green-600">+{posChange}</span>}
-                            {posChange < 0 && <span className="text-[10px] font-bold text-red-600">{posChange}</span>}
-                          </div>
-                        </td>
-                        <td className="py-2.5 px-4 text-right text-xs text-[#a3a3a3] hidden sm:table-cell">P{r.gridPosition}</td>
-                        <td className="py-2.5 px-4 text-right font-mono text-xs text-[#a3a3a3] hidden sm:table-cell">
-                          {r.position === 1 ? "Leader" : r.dnf ? r.dnfReason : `+${r.gap.toFixed(1)}s`}
-                        </td>
-                        <td className="py-2.5 px-4 text-right font-bold text-sm text-[#0a0a0a]">{r.points || "—"}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </>
-        )}
-
-        <div className="text-center mt-8 flex gap-4 justify-center">
-          <Link href={`/gp/${slug}/qualifying`} className="text-sm font-semibold text-[#e10600] hover:underline">Qualifying Grid</Link>
-          <Link href="/calendar" className="text-[#a3a3a3] text-sm hover:text-[#0a0a0a]">Back to Calendar</Link>
+        <div className="mt-8 flex gap-3">
+          <Link
+            href="/leaderboard"
+            className="f1-btn f1-btn-secondary rounded-sm text-sm"
+          >
+            Championship Standings
+          </Link>
+          <Link
+            href="/calendar"
+            className="f1-btn f1-btn-secondary rounded-sm text-sm"
+          >
+            Calendar
+          </Link>
         </div>
-      </div>
+      </section>
     </div>
   );
 }
