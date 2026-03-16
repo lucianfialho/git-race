@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { CarStats } from "@/lib/race/car-components";
 import { CarStatsDisplay } from "@/components/dashboard/car-stats";
@@ -45,6 +46,7 @@ interface DashboardClientProps {
 }
 
 export function DashboardClient({ profile, latestSnapshot, currentGP }: DashboardClientProps) {
+  const router = useRouter();
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState("");
 
@@ -54,7 +56,12 @@ export function DashboardClient({ profile, latestSnapshot, currentGP }: Dashboar
     try {
       const res = await fetch("/api/github/sync", { method: "POST" });
       const data = await res.json();
-      setSyncMessage(res.ok ? "Synced! Refresh to see updates." : data.error || "Sync failed");
+      if (res.ok) {
+        setSyncMessage("Synced!");
+        router.refresh();
+      } else {
+        setSyncMessage(data.error || "Sync failed");
+      }
     } catch {
       setSyncMessage("Network error");
     } finally {
