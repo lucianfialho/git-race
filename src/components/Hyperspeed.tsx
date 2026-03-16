@@ -1049,27 +1049,11 @@ class App {
       })
     );
 
-    try {
-      const smaaPass = new EffectPass(
-        this.camera,
-        new SMAAEffect({
-          preset: SMAAPreset.MEDIUM
-        })
-      );
-      this.renderPass.renderToScreen = false;
-      this.bloomPass.renderToScreen = false;
-      smaaPass.renderToScreen = true;
+    this.renderPass.renderToScreen = false;
+    this.bloomPass.renderToScreen = true;
 
-      this.composer.addPass(this.renderPass);
-      this.composer.addPass(this.bloomPass);
-      this.composer.addPass(smaaPass);
-    } catch {
-      // SMAA may fail in some contexts — fallback to bloom only
-      this.renderPass.renderToScreen = false;
-      this.bloomPass.renderToScreen = true;
-      this.composer.addPass(this.renderPass);
-      this.composer.addPass(this.bloomPass);
-    }
+    this.composer.addPass(this.renderPass);
+    this.composer.addPass(this.bloomPass);
   }
 
   loadAssets(): Promise<void> {
